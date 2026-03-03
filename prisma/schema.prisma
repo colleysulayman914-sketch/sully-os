@@ -8,9 +8,10 @@ datasource db {
 }
 
 model Todo {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String
-  completed Boolean  @default(false)
-  status    String   @default("pending") // pending | cancel | completed | archived
-  createdAt DateTime @default(now())
+  completed Boolean   @default(false)
+  status    String    @default("pending") // pending | cancel | completed | archived
+  dueDate   DateTime?
+  createdAt DateTime  @default(now())
 }

@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { Todo, TodoStatus } from "@/types/todo";
+import type { DisplayStatus } from "@/types/todo";
+import { getDisplayStatus } from "@/types/todo";
+import { Badge } from "@/components/ui/badge";
 import {
   Cell,
   Column,
@@ -15,8 +18,29 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Archive, Check, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EditTodoModal from "./EditTodoModal";
 
 const STATUS_OPTIONS: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
+
+function StatusTag({ displayStatus }: { displayStatus: DisplayStatus }) {
+  const variant =
+    displayStatus === "overdue"
+      ? "overdue"
+      : displayStatus === "completed"
+        ? "completed"
+        : displayStatus === "archived"
+          ? "archived"
+          : displayStatus === "pending"
+            ? "pending"
+            : displayStatus === "cancel"
+              ? "cancel"
+              : "secondary";
+  return (
+    <Badge variant={variant} className="capitalize">
+      {displayStatus}
+    </Badge>
+  );
+}
 
 type TodoTableProps = {
   todos: Todo[];
@@ -52,13 +76,14 @@ export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
           </Column>
           <Column isRowHeader>Title</Column>
           <Column>Status</Column>
+          <Column>Due</Column>
           <Column>Created</Column>
           <Column width={56}>Actions</Column>
         </TableHeader>
         <TableBody>
           {todos.length === 0 ? (
             <Row>
-              <Cell colSpan={5} className="h-24 text-center text-muted-foreground">
+              <Cell colSpan={6} className="h-24 text-center text-muted-foreground">
                 No tasks yet. Add one above.
               </Cell>
             </Row>
@@ -74,11 +99,10 @@ export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
 }
 
 function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
-  const [editing, setEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState(todo.title);
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -117,43 +141,6 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
         body: JSON.stringify({ completed: !todo.completed }),
       });
       if (res.ok) onUpdated();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleStatusChange(newStatus: TodoStatus) {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/todo/${todo.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (res.ok) onUpdated();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSaveTitle() {
-    const trimmed = editTitle.trim();
-    if (trimmed === todo.title || !trimmed) {
-      setEditing(false);
-      setEditTitle(todo.title);
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/todo/${todo.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: trimmed }),
-      });
-      if (res.ok) {
-        setEditing(false);
-        onUpdated();
-      }
     } finally {
       setLoading(false);
     }
@@ -223,55 +210,20 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
         />
       </Cell>
       <Cell>
-        {editing ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              onBlur={handleSaveTitle}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSaveTitle();
-                if (e.key === "Escape") {
-                  setEditTitle(todo.title);
-                  setEditing(false);
-                }
-              }}
-              disabled={loading}
-              autoFocus
-              className="min-h-[44px] flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
-            <Button size="sm" onPress={handleSaveTitle} isDisabled={loading}>
-              Save
-            </Button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className={cn(
-              "min-h-[44px] text-left w-full rounded-md px-2 -mx-2 hover:bg-accent",
-              todo.completed && "text-muted-foreground line-through"
-            )}
-          >
-            {todo.title}
-          </button>
-        )}
+        <span
+          className={cn(
+            "block min-h-[44px] py-2",
+            todo.completed && "text-muted-foreground line-through"
+          )}
+        >
+          {todo.title}
+        </span>
       </Cell>
       <Cell>
-        <select
-          value={todo.status}
-          onChange={(e) => handleStatusChange(e.target.value as TodoStatus)}
-          disabled={loading}
-          className="min-h-[44px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-          aria-label="Task status"
-        >
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <StatusTag displayStatus={getDisplayStatus(todo)} />
+      </Cell>
+      <Cell className="text-muted-foreground">
+        {todo.dueDate ? formatDate(todo.dueDate) : "—"}
       </Cell>
       <Cell className="text-muted-foreground">{formatDate(todo.createdAt)}</Cell>
       <Cell>
@@ -347,7 +299,7 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
                   role="menuitem"
                   onClick={() => {
                     setMenuOpen(false);
-                    setEditing(true);
+                    setEditModalOpen(true);
                   }}
                   disabled={loading}
                   className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
@@ -371,6 +323,13 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
               </div>,
               document.body
             )}
+          {editModalOpen && (
+            <EditTodoModal
+              todo={todo}
+              onClose={() => setEditModalOpen(false)}
+              onSaved={onUpdated}
+            />
+          )}
         </div>
       </Cell>
     </Row>

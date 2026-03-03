@@ -19,6 +19,7 @@ export async function GET(
       title: todo.title,
       completed: todo.completed,
       status: (todo.status ?? "pending") as TodoStatus,
+      dueDate: todo.dueDate,
       createdAt: todo.createdAt,
     });
   } catch (e) {
@@ -48,10 +49,17 @@ export async function PATCH(
     const status = typeof body?.status === "string" && ["pending", "cancel", "completed", "archived"].includes(body.status)
       ? body.status
       : undefined;
-    const data: { title?: string; completed?: boolean; status?: string } = {};
+    const dueDate =
+      body?.dueDate !== undefined
+        ? body.dueDate === null || body.dueDate === ""
+          ? null
+          : new Date(body.dueDate)
+        : undefined;
+    const data: { title?: string; completed?: boolean; status?: string; dueDate?: Date | null } = {};
     if (title !== undefined) data.title = title;
     if (completed !== undefined) data.completed = completed;
     if (status !== undefined) data.status = status;
+    if (dueDate !== undefined) data.dueDate = dueDate;
     if (Object.keys(data).length === 0) {
       const existing = await prisma.todo.findUnique({ where: { id } });
       if (!existing) {
@@ -62,6 +70,7 @@ export async function PATCH(
         title: existing.title,
         completed: existing.completed,
         status: (existing.status ?? "pending") as TodoStatus,
+        dueDate: existing.dueDate,
         createdAt: existing.createdAt,
       });
     }
@@ -74,6 +83,7 @@ export async function PATCH(
       title: todo.title,
       completed: todo.completed,
       status: (todo.status ?? "pending") as TodoStatus,
+      dueDate: todo.dueDate,
       createdAt: todo.createdAt,
     });
   } catch (e) {

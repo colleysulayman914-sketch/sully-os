@@ -1,22 +1,41 @@
 export const TODO_STATUSES = ["pending", "cancel", "completed", "archived"] as const;
 export type TodoStatus = (typeof TODO_STATUSES)[number];
 
+/** Display-only status: "overdue" when due date is past and task not completed/archived */
+export type DisplayStatus = TodoStatus | "overdue";
+
+export function getDisplayStatus(todo: { status: TodoStatus; dueDate: Date | null }): DisplayStatus {
+  if (todo.status === "completed" || todo.status === "archived") return todo.status;
+  if (todo.dueDate) {
+    const due = new Date(todo.dueDate);
+    const today = new Date();
+    due.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    if (due < today) return "overdue";
+  }
+  return todo.status;
+}
+
 export type Todo = {
   id: string;
   title: string;
   completed: boolean;
   status: TodoStatus;
+  dueDate: Date | null;
   createdAt: Date;
 };
 
 export type CreateTodoInput = {
   title: string;
+  status?: TodoStatus;
+  dueDate?: string | null; // ISO date string YYYY-MM-DD
 };
 
 export type UpdateTodoInput = {
   title?: string;
   completed?: boolean;
   status?: TodoStatus;
+  dueDate?: string | null;
 };
 
 export type TodoListParams = {

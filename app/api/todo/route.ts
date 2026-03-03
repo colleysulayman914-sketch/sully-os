@@ -40,6 +40,7 @@ export async function GET(
       title: t.title,
       completed: t.completed,
       status: (t.status ?? "pending") as TodoStatus,
+      dueDate: t.dueDate,
       createdAt: t.createdAt,
     }));
 
@@ -73,14 +74,20 @@ export async function POST(
         { status: 400 }
       );
     }
+    const status = STATUSES.includes(body?.status) ? body.status : "pending";
+    const dueDate =
+      body?.dueDate != null && body.dueDate !== ""
+        ? new Date(body.dueDate)
+        : undefined;
     const todo = await prisma.todo.create({
-      data: { title, status: "pending" },
+      data: { title, status, dueDate: dueDate ?? null },
     });
     const mapped: Todo = {
       id: todo.id,
       title: todo.title,
       completed: todo.completed,
       status: (todo.status ?? "pending") as TodoStatus,
+      dueDate: todo.dueDate,
       createdAt: todo.createdAt,
     };
     return NextResponse.json(mapped);

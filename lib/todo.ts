@@ -28,6 +28,7 @@ export async function getTodos(params: TodoListParams = {}): Promise<TodoListRes
     title: t.title,
     completed: t.completed,
     status: (t.status ?? "pending") as TodoStatus,
+    dueDate: t.dueDate,
     createdAt: t.createdAt,
   }));
 
