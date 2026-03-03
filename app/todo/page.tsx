@@ -1,17 +1,33 @@
 import AppShell from "@/components/AppShell";
 import { getTodos } from "@/lib/todo";
+import type { TodoStatus } from "@/types/todo";
 import TodoPageClient from "./TodoPageClient";
 
 export const metadata = {
   title: "Todo",
 };
 
-export default async function TodoPage() {
+const LIMIT = 3;
+const STATUSES: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
+
+export default async function TodoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; search?: string; status?: string }>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
+  const search = (params.search ?? "").trim();
+  const statusFilter =
+    params.status && STATUSES.includes(params.status as TodoStatus)
+      ? (params.status as TodoStatus)
+      : undefined;
+
   const initial = await getTodos({
-    page: 1,
-    limit: 5,
-    search: "",
-    status: undefined,
+    page,
+    limit: LIMIT,
+    search: search || undefined,
+    status: statusFilter,
   });
 
   return (
@@ -24,7 +40,12 @@ export default async function TodoPage() {
           <p className="mt-2 text-foreground/70">
             Add tasks, set status (pending, cancel, completed, archived), and search with pagination.
           </p>
-          <TodoPageClient initial={initial} />
+          <TodoPageClient
+            initial={initial}
+            currentPage={page}
+            search={search}
+            statusFilter={statusFilter ?? ""}
+          />
         </div>
       </main>
     </AppShell>

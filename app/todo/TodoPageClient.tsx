@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import type { TodoListResponse, TodoStatus } from "@/types/todo";
 import AddTodoForm from "./AddTodoForm";
@@ -13,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const DEFAULT_LIMIT = 5;
 const STATUS_OPTIONS: { value: "" | TodoStatus; label: string }[] = [
   { value: "", label: "All" },
   { value: "pending", label: "Pending" },
@@ -24,71 +24,72 @@ const STATUS_OPTIONS: { value: "" | TodoStatus; label: string }[] = [
 
 type TodoPageClientProps = {
   initial: TodoListResponse;
+  currentPage: number;
+  search: string;
+  statusFilter: "" | TodoStatus;
 };
 
-export default function TodoPageClient({ initial }: TodoPageClientProps) {
-  const [data, setData] = useState<TodoListResponse>(initial);
-  const [page, setPage] = useState(initial.page);
-  const [search, setSearch] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | TodoStatus>("");
-  const [loading, setLoading] = useState(false);
+function buildTodoUrl(params: {
+  page?: number;
+  search?: string;
+  status?: "" | TodoStatus;
+}) {
+  const q = new URLSearchParams();
+  if (params.page != null && params.page > 1) q.set("page", String(params.page));
+  if (params.search) q.set("search", params.search);
+  if (params.status) q.set("status", params.status);
+  const s = q.toString();
+  return s ? `/todo?${s}` : "/todo";
+}
 
-  const fetchTodos = useCallback(
-    async (opts?: { page?: number; search?: string; status?: "" | TodoStatus }) => {
-      setLoading(true);
-      try {
-        const p = opts?.page ?? page;
-        const q = opts?.search !== undefined ? opts.search : search;
-        const s = opts?.status !== undefined ? opts.status : statusFilter;
-        const params = new URLSearchParams();
-        params.set("page", String(p));
-        params.set("limit", String(DEFAULT_LIMIT));
-        if (q) params.set("search", q);
-        if (s) params.set("status", s);
-        const res = await fetch(`/api/todo?${params}`);
-        if (res.ok) {
-          const json: TodoListResponse = await res.json();
-          setData(json);
-          setPage(json.page);
-        }
-      } finally {
-        setLoading(false);
-      }
-    },
-    [page, search, statusFilter]
-  );
+export default function TodoPageClient({
+  initial,
+  currentPage,
+  search,
+  statusFilter,
+}: TodoPageClientProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [searchInput, setSearchInput] = useState(search);
 
-  const refetch = useCallback(() => {
-    fetchTodos({ page: 1 });
-  }, [fetchTodos]);
+  useEffect(() => {
+    setSearchInput(search);
+  }, [search]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearch(searchInput);
-    fetchTodos({ page: 1, search: searchInput, status: statusFilter });
+    startTransition(() => {
+      router.push(
+        buildTodoUrl({ page: 1, search: searchInput.trim(), status: statusFilter })
+      );
+    });
   };
 
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const v = e.target.value as "" | TodoStatus;
-    setStatusFilter(v);
-    fetchTodos({ page: 1, search, status: v });
+    startTransition(() => {
+      router.push(buildTodoUrl({ page: 1, search: searchInput.trim(), status: v }));
+    });
   };
 
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setPage(newPage + 1);
-      fetchTodos({ page: newPage + 1 });
-    },
-    [fetchTodos]
-  );
+  const handlePageChange = (newPage: number) => {
+    startTransition(() => {
+      router.push(
+        buildTodoUrl({
+          page: newPage + 1,
+          search: searchInput.trim(),
+          status: statusFilter,
+        })
+      );
+    });
+  };
 
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  const handleAdded = useCallback(() => {
-    refetch();
+  const handleAdded = () => {
     setAddModalOpen(false);
-  }, [refetch]);
+    startTransition(() => router.refresh());
+  };
 
   return (
     <div className="mt-6 flex min-w-0 flex-col gap-6">
@@ -160,7 +161,7 @@ export default function TodoPageClient({ initial }: TodoPageClientProps) {
         </select>
       </form>
 
-      {loading && data.todos.length === 0 ? (
+      {isPending && initial.todos.length === 0 ? (
         <div className="min-h-[120px] space-y-3">
           <div className="h-14 animate-pulse rounded-lg bg-muted" />
           <div className="h-14 animate-pulse rounded-lg bg-muted" />
@@ -168,12 +169,15 @@ export default function TodoPageClient({ initial }: TodoPageClientProps) {
         </div>
       ) : (
         <>
-          <TodoTable todos={data.todos} onUpdated={refetch} />
+          <TodoTable
+            todos={initial.todos}
+            onUpdated={() => startTransition(() => router.refresh())}
+          />
           <div className="min-w-0 overflow-x-auto">
             <WheelPagination
-              totalPages={data.totalPages}
+              totalPages={initial.totalPages}
               visibleCount={7}
-              value={data.page - 1}
+              value={initial.page - 1}
               onChange={handlePageChange}
               className="bg-background"
             />
