@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Todo, TodoListResponse, TodoStatus } from "@/types/todo";
 import AddTodoForm from "./AddTodoForm";
 import TodoTable from "./TodoTable";
@@ -76,9 +76,63 @@ export default function TodoPageClient({ initial }: TodoPageClientProps) {
     [fetchTodos]
   );
 
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!addModalOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAddModalOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [addModalOpen]);
+
+  const handleAdded = useCallback(() => {
+    refetch();
+    setAddModalOpen(false);
+  }, [refetch]);
+
   return (
     <div className="mt-6 flex flex-col gap-6">
-      <AddTodoForm onAdded={refetch} />
+      <button
+        type="button"
+        onClick={() => setAddModalOpen(true)}
+        className="min-h-[44px] min-w-[44px] rounded-lg bg-foreground px-5 py-3 text-background hover:opacity-90 sm:px-6"
+      >
+        Add task
+      </button>
+
+      {addModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="add-task-title"
+        >
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setAddModalOpen(false)}
+            className="absolute inset-0 bg-foreground/20"
+          />
+          <div className="relative w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-lg">
+            <h2 id="add-task-title" className="text-lg font-semibold text-foreground">
+              Add task
+            </h2>
+            <div className="mt-4">
+              <AddTodoForm onAdded={handleAdded} />
+            </div>
+            <button
+              type="button"
+              onClick={() => setAddModalOpen(false)}
+              className="absolute right-4 top-4 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md text-2xl text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Close modal"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <label htmlFor="todo-search" className="sr-only">
