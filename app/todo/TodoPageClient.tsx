@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { Search } from "lucide-react";
 import type { TodoListResponse, TodoStatus } from "@/types/todo";
 import AddTodoForm from "./AddTodoForm";
 import TodoTable from "./TodoTable";
@@ -12,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const DEFAULT_LIMIT = 10;
+const DEFAULT_LIMIT = 5;
 const STATUS_OPTIONS: { value: "" | TodoStatus; label: string }[] = [
   { value: "", label: "All" },
   { value: "pending", label: "Pending" },
@@ -118,17 +119,26 @@ export default function TodoPageClient({ initial }: TodoPageClientProps) {
           Search tasks
         </label>
         <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-          <input
-            id="todo-search"
-            type="search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Search by title…"
-            className="min-h-[44px] min-w-0 flex-1 rounded-md border border-input bg-background px-4 py-2 text-foreground placeholder:text-muted-foreground"
-          />
+          <div className="relative flex min-w-0 flex-1">
+            <input
+              id="todo-search"
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by title…"
+              className="min-h-[44px] w-full rounded-md border border-input bg-background py-2 pl-4 pr-12 text-foreground placeholder:text-muted-foreground sm:pr-4"
+            />
+            <button
+              type="submit"
+              aria-label="Search tasks"
+              className="absolute right-0 top-0 flex h-full min-w-[44px] items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground sm:hidden"
+            >
+              <Search className="size-5" />
+            </button>
+          </div>
           <button
             type="submit"
-            className="min-h-[44px] shrink-0 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:opacity-90 sm:min-w-[44px]"
+            className="hidden min-h-[44px] shrink-0 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:opacity-90 sm:flex sm:min-w-[44px] sm:items-center sm:gap-2"
           >
             Search
           </button>

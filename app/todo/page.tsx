@@ -9,7 +9,7 @@ export const metadata = {
 export default async function TodoPage() {
   const initial = await getTodos({
     page: 1,
-    limit: 10,
+    limit: 5,
     search: "",
     status: undefined,
   });
