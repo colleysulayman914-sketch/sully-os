@@ -90,7 +90,7 @@ export default function TodoPageClient({ initial }: TodoPageClientProps) {
   }, [refetch]);
 
   return (
-    <div className="mt-6 flex flex-col gap-6">
+    <div className="mt-6 flex min-w-0 flex-col gap-6">
       <div className="flex justify-end">
         <button
           type="button"
@@ -110,24 +110,29 @@ export default function TodoPageClient({ initial }: TodoPageClientProps) {
         </DialogContent>
       </Dialog>
 
-      <form onSubmit={handleSearchSubmit} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+      <form
+        onSubmit={handleSearchSubmit}
+        className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
+      >
         <label htmlFor="todo-search" className="sr-only">
           Search tasks
         </label>
-        <input
-          id="todo-search"
-          type="search"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Search by title…"
-          className="min-h-[44px] flex-1 rounded-md border border-input bg-background px-4 py-2 text-foreground placeholder:text-muted-foreground"
-        />
-        <button
-          type="submit"
-          className="min-h-[44px] min-w-[44px] rounded-md bg-primary px-4 py-2 text-primary-foreground hover:opacity-90"
-        >
-          Search
-        </button>
+        <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+          <input
+            id="todo-search"
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by title…"
+            className="min-h-[44px] min-w-0 flex-1 rounded-md border border-input bg-background px-4 py-2 text-foreground placeholder:text-muted-foreground"
+          />
+          <button
+            type="submit"
+            className="min-h-[44px] shrink-0 rounded-md bg-primary px-4 py-2 text-primary-foreground hover:opacity-90 sm:min-w-[44px]"
+          >
+            Search
+          </button>
+        </div>
         <label htmlFor="todo-status" className="sr-only">
           Filter by status
         </label>
@@ -135,7 +140,7 @@ export default function TodoPageClient({ initial }: TodoPageClientProps) {
           id="todo-status"
           value={statusFilter}
           onChange={handleStatusChange}
-          className="min-h-[44px] rounded-md border border-input bg-background px-4 py-2 text-foreground"
+          className="min-h-[44px] w-full rounded-md border border-input bg-background px-4 py-2 text-foreground sm:w-auto sm:min-w-[140px]"
         >
           {STATUS_OPTIONS.map((o) => (
             <option key={o.value || "all"} value={o.value}>
@@ -154,13 +159,15 @@ export default function TodoPageClient({ initial }: TodoPageClientProps) {
       ) : (
         <>
           <TodoTable todos={data.todos} onUpdated={refetch} />
-          <WheelPagination
-            totalPages={data.totalPages}
-            visibleCount={7}
-            value={data.page - 1}
-            onChange={handlePageChange}
-            className="bg-background"
-          />
+          <div className="min-w-0 overflow-x-auto">
+            <WheelPagination
+              totalPages={data.totalPages}
+              visibleCount={7}
+              value={data.page - 1}
+              onChange={handlePageChange}
+              className="bg-background"
+            />
+          </div>
         </>
       )}
     </div>

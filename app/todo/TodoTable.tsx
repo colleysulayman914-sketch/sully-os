@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { Todo, TodoStatus } from "@/types/todo";
 import type { DisplayStatus } from "@/types/todo";
@@ -67,42 +67,148 @@ export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
     );
   }
 
+  const emptyMessage = (
+    <p className="py-8 text-center text-muted-foreground">No tasks yet. Add one above.</p>
+  );
+
   return (
-    <div className="relative max-w-full overflow-auto rounded-md border border-border bg-background">
-      <Table aria-label="Todo list">
-        <TableHeader>
-          <Column width={48} minWidth={48}>
-            Done
-          </Column>
-          <Column isRowHeader>Title</Column>
-          <Column>Status</Column>
-          <Column>Due</Column>
-          <Column>Created</Column>
-          <Column width={56}>Actions</Column>
-        </TableHeader>
-        <TableBody>
-          {todos.length === 0 ? (
-            <Row>
-              <Cell colSpan={6} className="h-24 text-center text-muted-foreground">
-                No tasks yet. Add one above.
-              </Cell>
-            </Row>
-          ) : (
-            todos.map((todo) => (
-              <TodoRow key={todo.id} todo={todo} onUpdated={onUpdated} />
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <>
+      {/* Mobile: card list */}
+      <div className="min-w-0 space-y-3 md:hidden">
+        {todos.length === 0 ? (
+          emptyMessage
+        ) : (
+          todos.map((todo) => (
+            <TodoCard key={todo.id} todo={todo} onUpdated={onUpdated} />
+          ))
+        )}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="relative hidden min-w-0 max-w-full overflow-auto rounded-md border border-border bg-background md:block">
+        <Table aria-label="Todo list">
+          <TableHeader>
+            <Column width={48} minWidth={48}>
+              Done
+            </Column>
+            <Column isRowHeader>Title</Column>
+            <Column>Status</Column>
+            <Column>Due</Column>
+            <Column>Created</Column>
+            <Column width={56}>Actions</Column>
+          </TableHeader>
+          <TableBody>
+            {todos.length === 0 ? (
+              <Row>
+                <Cell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  No tasks yet. Add one above.
+                </Cell>
+              </Row>
+            ) : (
+              todos.map((todo) => (
+                <TodoRow key={todo.id} todo={todo} onUpdated={onUpdated} />
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }
 
-function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
+type TodoActions = {
+  loading: boolean;
+  handleToggleCompleted: () => void;
+  handleArchive: () => void;
+  handleMarkCompleted: () => void;
+  handleMarkIncomplete: () => void;
+  handleDelete: () => void;
+  editModalOpen: boolean;
+  setEditModalOpen: (v: boolean) => void;
+};
+
+function useTodoActions(todo: Todo, onUpdated: () => void): TodoActions {
   const [loading, setLoading] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const handleToggleCompleted = useCallback(() => {
+    setLoading(true);
+    fetch(`/api/todo/${todo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !todo.completed }),
+    })
+      .then((res) => res.ok && onUpdated())
+      .finally(() => setLoading(false));
+  }, [todo.id, onUpdated]);
+
+  const handleArchive = useCallback(() => {
+    setLoading(true);
+    fetch(`/api/todo/${todo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "archived" }),
+    })
+      .then((res) => res.ok && onUpdated())
+      .finally(() => setLoading(false));
+  }, [todo.id, onUpdated]);
+
+  const handleMarkCompleted = useCallback(() => {
+    setLoading(true);
+    fetch(`/api/todo/${todo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: true, status: "completed" }),
+    })
+      .then((res) => res.ok && onUpdated())
+      .finally(() => setLoading(false));
+  }, [todo.id, onUpdated]);
+
+  const handleMarkIncomplete = useCallback(() => {
+    setLoading(true);
+    fetch(`/api/todo/${todo.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: false, status: "pending" }),
+    })
+      .then((res) => res.ok && onUpdated())
+      .finally(() => setLoading(false));
+  }, [todo.id, onUpdated]);
+
+  const handleDelete = useCallback(() => {
+    if (!confirm("Delete this task?")) return;
+    setLoading(true);
+    fetch(`/api/todo/${todo.id}`, { method: "DELETE" })
+      .then((res) => res.ok && onUpdated())
+      .finally(() => setLoading(false));
+  }, [todo.id, onUpdated]);
+
+  return {
+    loading,
+    handleToggleCompleted,
+    handleArchive,
+    handleMarkCompleted,
+    handleMarkIncomplete,
+    handleDelete,
+    editModalOpen,
+    setEditModalOpen,
+  };
+}
+
+const menuItemClass =
+  "flex w-full min-h-[44px] items-center gap-2 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50";
+
+function TodoActionsMenu({
+  todo,
+  actions,
+  onUpdated,
+}: {
+  todo: Todo;
+  actions: TodoActions;
+  onUpdated: () => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -132,80 +238,124 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [menuOpen]);
 
-  async function handleToggleCompleted() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/todo/${todo.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: !todo.completed }),
-      });
-      if (res.ok) onUpdated();
-    } finally {
-      setLoading(false);
-    }
-  }
+  return (
+    <div className="relative flex justify-end" ref={triggerRef}>
+      <Button
+        variant="ghost"
+        size="icon"
+        onPress={() => setMenuOpen((o) => !o)}
+        isDisabled={actions.loading}
+        aria-label="More actions"
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        className="min-h-[44px] min-w-[44px]"
+      >
+        <MoreVertical className="size-5" />
+      </Button>
+      {menuOpen &&
+        menuPosition &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            className="fixed z-50 min-w-[160px] rounded-md border border-border bg-background py-1 shadow-lg"
+            style={{ top: menuPosition.top, right: menuPosition.right }}
+          >
+            {todo.completed ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  actions.handleMarkIncomplete();
+                }}
+                disabled={actions.loading}
+                className={menuItemClass}
+              >
+                <Check className="size-4 shrink-0" />
+                Mark as incomplete
+              </button>
+            ) : (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  actions.handleMarkCompleted();
+                }}
+                disabled={actions.loading}
+                className={menuItemClass}
+              >
+                <Check className="size-4 shrink-0" />
+                Mark as completed
+              </button>
+            )}
+            {String(todo.status) !== "archived" && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  actions.handleArchive();
+                }}
+                disabled={actions.loading}
+                className={menuItemClass}
+              >
+                <Archive className="size-4 shrink-0" />
+                Archive
+              </button>
+            )}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                actions.setEditModalOpen(true);
+              }}
+              disabled={actions.loading}
+              className={menuItemClass}
+            >
+              <Pencil className="size-4 shrink-0" />
+              Edit
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                actions.handleDelete();
+              }}
+              disabled={actions.loading}
+              className={cn(menuItemClass, "text-destructive hover:text-destructive")}
+            >
+              <Trash2 className="size-4 shrink-0" />
+              Delete
+            </button>
+          </div>,
+          document.body
+        )}
+      {actions.editModalOpen && (
+        <EditTodoModal
+          todo={todo}
+          onClose={() => actions.setEditModalOpen(false)}
+          onSaved={onUpdated}
+        />
+      )}
+    </div>
+  );
+}
 
-  async function handleArchive() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/todo/${todo.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "archived" }),
-      });
-      if (res.ok) onUpdated();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleMarkCompleted() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/todo/${todo.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: true, status: "completed" }),
-      });
-      if (res.ok) onUpdated();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleMarkIncomplete() {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/todo/${todo.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: false, status: "pending" }),
-      });
-      if (res.ok) onUpdated();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDelete() {
-    if (!confirm("Delete this task?")) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/todo/${todo.id}`, { method: "DELETE" });
-      if (res.ok) onUpdated();
-    } finally {
-      setLoading(false);
-    }
-  }
+function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
+  const actions = useTodoActions(todo, onUpdated);
 
   return (
     <Row>
       <Cell>
         <Checkbox
           isSelected={todo.completed}
-          onChange={handleToggleCompleted}
-          isDisabled={loading}
+          onChange={actions.handleToggleCompleted}
+          isDisabled={actions.loading}
           aria-label={todo.completed ? "Mark as not done" : "Mark as done"}
         />
       </Cell>
@@ -227,111 +377,47 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
       </Cell>
       <Cell className="text-muted-foreground">{formatDate(todo.createdAt)}</Cell>
       <Cell>
-        <div className="relative flex justify-end" ref={triggerRef}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => setMenuOpen((o) => !o)}
-            isDisabled={loading}
-            aria-label="More actions"
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            className="min-h-[44px] min-w-[44px]"
-          >
-            <MoreVertical className="size-5" />
-          </Button>
-          {menuOpen &&
-            menuPosition &&
-            typeof document !== "undefined" &&
-            createPortal(
-              <div
-                ref={menuRef}
-                role="menu"
-                className="fixed z-50 min-w-[160px] rounded-md border border-border bg-background py-1 shadow-lg"
-                style={{ top: menuPosition.top, right: menuPosition.right }}
-              >
-                {todo.completed ? (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handleMarkIncomplete();
-                    }}
-                    disabled={loading}
-                    className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-                  >
-                    <Check className="size-4 shrink-0" />
-                    Mark as incomplete
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handleMarkCompleted();
-                    }}
-                    disabled={loading}
-                    className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-                  >
-                    <Check className="size-4 shrink-0" />
-                    Mark as completed
-                  </button>
-                )}
-                {String(todo.status) !== "archived" && (
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      handleArchive();
-                    }}
-                    disabled={loading}
-                    className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-                  >
-                    <Archive className="size-4 shrink-0" />
-                    Archive
-                  </button>
-                )}
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setEditModalOpen(true);
-                  }}
-                  disabled={loading}
-                  className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
-                >
-                  <Pencil className="size-4 shrink-0" />
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    handleDelete();
-                  }}
-                  disabled={loading}
-                  className="flex w-full min-h-[44px] items-center gap-2 px-4 py-2 text-left text-sm text-destructive hover:bg-accent hover:text-destructive disabled:opacity-50"
-                >
-                  <Trash2 className="size-4 shrink-0" />
-                  Delete
-                </button>
-              </div>,
-              document.body
-            )}
-          {editModalOpen && (
-            <EditTodoModal
-              todo={todo}
-              onClose={() => setEditModalOpen(false)}
-              onSaved={onUpdated}
-            />
-          )}
-        </div>
+        <TodoActionsMenu todo={todo} actions={actions} onUpdated={onUpdated} />
       </Cell>
     </Row>
+  );
+}
+
+function TodoCard({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
+  const actions = useTodoActions(todo, onUpdated);
+
+  return (
+    <article
+      className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-4 shadow-sm"
+      aria-label={`Task: ${todo.title}`}
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center pt-1">
+          <Checkbox
+            isSelected={todo.completed}
+            onChange={actions.handleToggleCompleted}
+            isDisabled={actions.loading}
+            aria-label={todo.completed ? "Mark as not done" : "Mark as done"}
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3
+            className={cn(
+              "font-medium text-foreground",
+              todo.completed && "text-muted-foreground line-through"
+            )}
+          >
+            {todo.title}
+          </h3>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <StatusTag displayStatus={getDisplayStatus(todo)} />
+            <span className="text-xs text-muted-foreground">
+              Due: {todo.dueDate ? formatDate(todo.dueDate) : "—"}
+            </span>
+          </div>
+        </div>
+        <TodoActionsMenu todo={todo} actions={actions} onUpdated={onUpdated} />
+      </div>
+    </article>
   );
 }

@@ -4,6 +4,20 @@ import type { Todo, TodoStatus } from "@/types/todo";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
+/** Prisma Todo may omit optional fields in generated types; use this when reading dueDate */
+function toTodo(
+  row: { id: string; title: string; completed: boolean; status: string | null; createdAt: Date; dueDate?: Date | null }
+): Todo {
+  return {
+    id: row.id,
+    title: row.title,
+    completed: row.completed,
+    status: (row.status ?? "pending") as TodoStatus,
+    dueDate: row.dueDate ?? null,
+    createdAt: row.createdAt,
+  };
+}
+
 export async function GET(
   _request: Request,
   { params }: RouteParams
@@ -14,14 +28,7 @@ export async function GET(
     if (!todo) {
       return NextResponse.json({ error: "Todo not found" }, { status: 404 });
     }
-    return NextResponse.json({
-      id: todo.id,
-      title: todo.title,
-      completed: todo.completed,
-      status: (todo.status ?? "pending") as TodoStatus,
-      dueDate: todo.dueDate,
-      createdAt: todo.createdAt,
-    });
+    return NextResponse.json(toTodo(todo));
   } catch (e) {
     console.error(e);
     return NextResponse.json(
@@ -65,27 +72,13 @@ export async function PATCH(
       if (!existing) {
         return NextResponse.json({ error: "Todo not found" }, { status: 404 });
       }
-      return NextResponse.json({
-        id: existing.id,
-        title: existing.title,
-        completed: existing.completed,
-        status: (existing.status ?? "pending") as TodoStatus,
-        dueDate: existing.dueDate,
-        createdAt: existing.createdAt,
-      });
+      return NextResponse.json(toTodo(existing));
     }
     const todo = await prisma.todo.update({
       where: { id },
       data,
     });
-    return NextResponse.json({
-      id: todo.id,
-      title: todo.title,
-      completed: todo.completed,
-      status: (todo.status ?? "pending") as TodoStatus,
-      dueDate: todo.dueDate,
-      createdAt: todo.createdAt,
-    });
+    return NextResponse.json(toTodo(todo));
   } catch (e) {
     if (e && typeof e === "object" && "code" in e && e.code === "P2025") {
       return NextResponse.json({ error: "Todo not found" }, { status: 404 });
