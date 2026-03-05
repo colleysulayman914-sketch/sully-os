@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import type { Todo, TodoListResponse, TodoStatus } from "@/types/todo";
+import type { Todo, TodoListResponse, TodoPriority, TodoStatus } from "@/types/todo";
 
 const STATUSES: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
+const PRIORITIES: TodoPriority[] = ["low", "medium", "high"];
 
 function parseQuery(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -40,6 +41,7 @@ export async function GET(
       title: t.title,
       completed: t.completed,
       status: (t.status ?? "pending") as TodoStatus,
+      priority: t.priority && PRIORITIES.includes(t.priority as TodoPriority) ? (t.priority as TodoPriority) : null,
       dueDate: t.dueDate,
       createdAt: t.createdAt,
     }));
@@ -75,18 +77,22 @@ export async function POST(
       );
     }
     const status = STATUSES.includes(body?.status) ? body.status : "pending";
+    const priority = body?.priority != null && body.priority !== "" && PRIORITIES.includes(body.priority)
+      ? body.priority
+      : null;
     const dueDate =
       body?.dueDate != null && body.dueDate !== ""
         ? new Date(body.dueDate)
         : undefined;
     const todo = await prisma.todo.create({
-      data: { title, status, dueDate: dueDate ?? null },
+      data: { title, status, priority, dueDate: dueDate ?? null },
     });
     const mapped: Todo = {
       id: todo.id,
       title: todo.title,
       completed: todo.completed,
       status: (todo.status ?? "pending") as TodoStatus,
+      priority: todo.priority && PRIORITIES.includes(todo.priority as TodoPriority) ? (todo.priority as TodoPriority) : null,
       dueDate: todo.dueDate,
       createdAt: todo.createdAt,
     };

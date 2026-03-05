@@ -1,18 +1,29 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import type { Todo, TodoStatus } from "@/types/todo";
+import type { Todo, TodoPriority, TodoStatus } from "@/types/todo";
+
+const PRIORITIES: TodoPriority[] = ["low", "medium", "high"];
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-/** Prisma Todo may omit optional fields in generated types; use this when reading dueDate */
+/** Prisma Todo may omit optional fields in generated types; use this when reading dueDate/priority */
 function toTodo(
-  row: { id: string; title: string; completed: boolean; status: string | null; createdAt: Date; dueDate?: Date | null }
+  row: {
+    id: string;
+    title: string;
+    completed: boolean;
+    status: string | null;
+    createdAt: Date;
+    dueDate?: Date | null;
+    priority?: string | null;
+  }
 ): Todo {
   return {
     id: row.id,
     title: row.title,
     completed: row.completed,
     status: (row.status ?? "pending") as TodoStatus,
+    priority: row.priority && PRIORITIES.includes(row.priority as TodoPriority) ? (row.priority as TodoPriority) : null,
     dueDate: row.dueDate ?? null,
     createdAt: row.createdAt,
   };
@@ -62,10 +73,18 @@ export async function PATCH(
           ? null
           : new Date(body.dueDate)
         : undefined;
-    const data: { title?: string; completed?: boolean; status?: string; dueDate?: Date | null } = {};
+    const priority =
+      body?.priority !== undefined
+        ? body.priority === null || body.priority === ""
+          ? null
+          : typeof body.priority === "string" && PRIORITIES.includes(body.priority as TodoPriority)
+            ? body.priority
+            : undefined;
+    const data: { title?: string; completed?: boolean; status?: string; priority?: string | null; dueDate?: Date | null } = {};
     if (title !== undefined) data.title = title;
     if (completed !== undefined) data.completed = completed;
     if (status !== undefined) data.status = status;
+    if (priority !== undefined) data.priority = priority;
     if (dueDate !== undefined) data.dueDate = dueDate;
     if (Object.keys(data).length === 0) {
       const existing = await prisma.todo.findUnique({ where: { id } });
