@@ -27,6 +27,7 @@ type TodoPageClientProps = {
   currentPage: number;
   search: string;
   statusFilter: "" | TodoStatus;
+  openAdd?: boolean;
 };
 
 function buildTodoUrl(params: {
@@ -47,14 +48,27 @@ export default function TodoPageClient({
   currentPage,
   search,
   statusFilter,
+  openAdd = false,
 }: TodoPageClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [searchInput, setSearchInput] = useState(search);
+  const [addModalOpen, setAddModalOpen] = useState(openAdd);
 
   useEffect(() => {
     setSearchInput(search);
   }, [search]);
+
+  useEffect(() => {
+    if (openAdd) {
+      const url = buildTodoUrl({
+        page: currentPage,
+        search: searchInput.trim(),
+        status: statusFilter || undefined,
+      });
+      router.replace(url, { scroll: false });
+    }
+  }, [openAdd, currentPage, searchInput, statusFilter, router]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,8 +97,6 @@ export default function TodoPageClient({
       );
     });
   };
-
-  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const handleAdded = () => {
     setAddModalOpen(false);

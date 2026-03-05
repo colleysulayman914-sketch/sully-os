@@ -13,7 +13,7 @@ const STATUSES: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
 export default async function TodoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; search?: string; status?: string }>;
+  searchParams: Promise<{ page?: string; search?: string; status?: string; openAdd?: string }>;
 }) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
@@ -22,6 +22,7 @@ export default async function TodoPage({
     params.status && STATUSES.includes(params.status as TodoStatus)
       ? (params.status as TodoStatus)
       : undefined;
+  const openAdd = params.openAdd === "1";
 
   const initial = await getTodos({
     page,
@@ -45,6 +46,7 @@ export default async function TodoPage({
             currentPage={page}
             search={search}
             statusFilter={statusFilter ?? ""}
+            openAdd={openAdd}
           />
         </div>
       </main>
