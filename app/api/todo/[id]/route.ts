@@ -93,13 +93,14 @@ export async function PATCH(
           ? null
           : new Date(body.dueDate)
         : undefined;
-    const priority =
-      body?.priority !== undefined
-        ? body.priority === null || body.priority === ""
-          ? null
-          : typeof body.priority === "string" && PRIORITIES.includes(body.priority as TodoPriority)
-            ? body.priority
-            : undefined;
+    let priority: string | null | undefined = undefined;
+    if (body?.priority !== undefined) {
+      if (body.priority === null || body.priority === "") {
+        priority = null;
+      } else if (typeof body.priority === "string" && PRIORITIES.includes(body.priority as TodoPriority)) {
+        priority = body.priority;
+      }
+    }
     const rawRule = body?.repeatRule;
     const repeatRule =
       rawRule !== undefined
