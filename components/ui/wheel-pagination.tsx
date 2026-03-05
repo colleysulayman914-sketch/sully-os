@@ -22,8 +22,13 @@ export default function WheelPagination({
   className,
   onChange,
 }: WheelPaginationProps) {
+  const [mounted, setMounted] = useState(false);
   const [active, setActive] = useState(value ?? 0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (value !== undefined) setActive(value);
@@ -75,6 +80,26 @@ export default function WheelPagination({
   };
 
   const visiblePages = getVisiblePages();
+
+  if (!mounted) {
+    return (
+      <div
+        className={cn(
+          "flex items-center gap-2 p-4 min-h-[52px]",
+          className
+        )}
+        aria-hidden
+      >
+        <div className="min-h-[44px] min-w-[44px] rounded-md bg-muted/30" />
+        <div className="flex gap-1">
+          {Array.from({ length: Math.min(visibleCount, totalPages || 1) }).map((_, i) => (
+            <div key={i} className="h-6 w-6 rounded-full bg-muted/30" />
+          ))}
+        </div>
+        <div className="min-h-[44px] min-w-[44px] rounded-md bg-muted/30" />
+      </div>
+    );
+  }
 
   return (
     <div

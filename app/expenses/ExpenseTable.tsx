@@ -30,7 +30,27 @@ import {
   Trash2,
   User,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import type { ExpenseCategory, ExpensePaymentMethod } from "@/types/expense";
 import EditExpenseModal from "./EditExpenseModal";
+
+function CategoryTag({ category }: { category: ExpenseCategory | null }) {
+  if (!category) return <span className="text-muted-foreground">—</span>;
+  return (
+    <Badge variant="category">
+      {category}
+    </Badge>
+  );
+}
+
+function PaymentMethodTag({ method }: { method: ExpensePaymentMethod | null }) {
+  if (!method) return <span className="text-muted-foreground">—</span>;
+  return (
+    <Badge variant="paymentMethod">
+      {method}
+    </Badge>
+  );
+}
 
 type ExpenseTableProps = {
   expenses: Expense[];
@@ -326,14 +346,14 @@ function ExpenseRow({
       <Cell className="text-muted-foreground">
         {formatDate(expense.date)}
       </Cell>
-      <Cell className="text-muted-foreground">
-        {expense.category ?? "—"}
+      <Cell>
+        <CategoryTag category={expense.category} />
       </Cell>
       <Cell className="min-w-0 max-w-[140px] truncate text-muted-foreground">
         {expense.toWhom ?? "—"}
       </Cell>
-      <Cell className="text-muted-foreground">
-        {expense.paymentMethod ?? "—"}
+      <Cell>
+        <PaymentMethodTag method={expense.paymentMethod} />
       </Cell>
       <Cell className="min-w-0 max-w-[200px] truncate text-muted-foreground">
         {expense.note ?? "—"}
@@ -375,7 +395,7 @@ function ExpenseCard({
             {expense.category && (
               <span className="flex items-center gap-1.5">
                 <Tag className="size-4 shrink-0" aria-hidden />
-                {expense.category}
+                <CategoryTag category={expense.category} />
               </span>
             )}
             {expense.toWhom && (
@@ -387,7 +407,7 @@ function ExpenseCard({
             {expense.paymentMethod && (
               <span className="flex items-center gap-1.5">
                 <CreditCard className="size-4 shrink-0" aria-hidden />
-                {expense.paymentMethod}
+                <PaymentMethodTag method={expense.paymentMethod} />
               </span>
             )}
             {expense.note && (
