@@ -1,0 +1,202 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import type { Earning, EarningCategory, ExpensePaymentMethod } from "@/types/earning";
+import { EARNING_CATEGORIES, PAYMENT_METHODS } from "@/types/earning";
+
+type RouteParams = { params: Promise<{ id: string }> };
+
+function toEarning(row: {
+  id: string;
+  amountCents: number;
+  date: Date;
+  note: string | null;
+  category: string | null;
+  fromWhom: string | null;
+  paymentMethod: string | null;
+  createdAt: Date;
+}): Earning {
+  const category =
+    row.category && EARNING_CATEGORIES.includes(row.category as EarningCategory)
+      ? (row.category as EarningCategory)
+      : null;
+  const paymentMethod =
+    row.paymentMethod && PAYMENT_METHODS.includes(row.paymentMethod as ExpensePaymentMethod)
+      ? (row.paymentMethod as ExpensePaymentMethod)
+      : null;
+  return {
+    id: row.id,
+    amountCents: row.amountCents,
+    date: row.date,
+    note: row.note,
+    category,
+    fromWhom: row.fromWhom,
+    paymentMethod,
+    createdAt: row.createdAt,
+  };
+}
+
+export async function GET(
+  _request: Request,
+  { params }: RouteParams
+): Promise<NextResponse<Earning | { error: string }>> {
+  try {
+    const { id } = await params;
+    const earning = await prisma.earning.findUnique({ where: { id } });
+    if (!earning) {
+      return NextResponse.json({ error: "Earning not found" }, { status: 404 });
+    }
+    return NextResponse.json(toEarning(earning));
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json(
+      { error: "Failed to fetch earning" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: RouteParams
+): Promise<NextResponse<Earning | { error: string }>> {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    let amountCents: number | undefined = undefined;
+    if (body?.amountCents !== undefined) {
+      const n =
+        typeof body.amountCents === "number"
+          ? body.amountCents
+          : parseInt(String(body.amountCents), 10);
+      if (!Number.isInteger(n) || n <= 0) {
+        return NextResponse.json(
+          { error: "Amount must be a positive integer" },
+          { status: 400 }
+        );
+      }
+      amountCents = n;
+    }
+
+    let date: Date | undefined = undefined;
+    if (body?.date !== undefined) {
+      if (body.date === null || body.date === "") {
+        return NextResponse.json(
+          { error: "Date is required" },
+          { status: 400 }
+        );
+      }
+      const d = new Date(body.date);
+      if (Number.isNaN(d.getTime())) {
+        return NextResponse.json(
+          { error: "Invalid date" },
+          { status: 400 }
+        );
+      }
+      date = d;
+    }
+
+    const note =
+      body?.note !== undefined
+        ? typeof body.note === "string"
+          ? body.note.trim() || null
+          : null
+        : undefined;
+
+    let category: string | null | undefined = undefined;
+    if (body?.category !== undefined) {
+      if (body.category === null || body.category === "") {
+        category = null;
+      } else if (
+        EARNING_CATEGORIES.includes(body.category as EarningCategory)
+      ) {
+        category = body.category;
+      }
+    }
+
+    const fromWhom =
+      body?.fromWhom !== undefined
+        ? typeof body.fromWhom === "string"
+          ? body.fromWhom.trim() || null
+          : null
+        : undefined;
+
+    let paymentMethod: string | null | undefined = undefined;
+    if (body?.paymentMethod !== undefined) {
+      if (body.paymentMethod === null || body.paymentMethod === "") {
+        paymentMethod = null;
+      } else if (
+        PAYMENT_METHODS.includes(body.paymentMethod as ExpensePaymentMethod)
+      ) {
+        paymentMethod = body.paymentMethod;
+      }
+    }
+
+    const data: {
+      amountCents?: number;
+      date?: Date;
+      note?: string | null;
+      category?: string | null;
+      fromWhom?: string | null;
+      paymentMethod?: string | null;
+    } = {};
+    if (amountCents !== undefined) data.amountCents = amountCents;
+    if (date !== undefined) data.date = date;
+    if (note !== undefined) data.note = note;
+    if (category !== undefined) data.category = category;
+    if (fromWhom !== undefined) data.fromWhom = fromWhom;
+    if (paymentMethod !== undefined) data.paymentMethod = paymentMethod;
+
+    if (Object.keys(data).length === 0) {
+      const existing = await prisma.earning.findUnique({ where: { id } });
+      if (!existing) {
+        return NextResponse.json(
+          { error: "Earning not found" },
+          { status: 404 }
+        );
+      }
+      return NextResponse.json(toEarning(existing));
+    }
+
+    const earning = await prisma.earning.update({
+      where: { id },
+      data,
+    });
+    return NextResponse.json(toEarning(earning));
+  } catch (e) {
+    if (e && typeof e === "object" && "code" in e && e.code === "P2025") {
+      return NextResponse.json(
+        { error: "Earning not found" },
+        { status: 404 }
+      );
+    }
+    console.error(e);
+    return NextResponse.json(
+      { error: "Failed to update earning" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: RouteParams
+): Promise<NextResponse<{ success: true } | { error: string }>> {
+  try {
+    const { id } = await params;
+    await prisma.earning.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (e) {
+    if (e && typeof e === "object" && "code" in e && e.code === "P2025") {
+      return NextResponse.json(
+        { error: "Earning not found" },
+        { status: 404 }
+      );
+    }
+    console.error(e);
+    return NextResponse.json(
+      { error: "Failed to delete earning" },
+      { status: 500 }
+    );
+  }
+}

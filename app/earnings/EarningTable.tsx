@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import type { Earning, EarningCategory, ExpensePaymentMethod } from "@/types/earning";
+import type { Earning, EarningCategory } from "@/types/earning";
 import {
   Cell,
   Column,
@@ -22,8 +22,8 @@ import {
 import {
   Banknote,
   Calendar,
-  CreditCard,
   FileText,
+  Inbox,
   MoreVertical,
   Pencil,
   Tag,
@@ -38,15 +38,6 @@ function EarningCategoryTag({ category }: { category: EarningCategory | null }) 
   return (
     <Badge variant="earningCategory">
       {category}
-    </Badge>
-  );
-}
-
-function PaymentMethodTag({ method }: { method: ExpensePaymentMethod | null }) {
-  if (!method) return <span className="text-muted-foreground">—</span>;
-  return (
-    <Badge variant="paymentMethod">
-      {method}
     </Badge>
   );
 }
@@ -87,9 +78,12 @@ export default function EarningTable({
   }
 
   const emptyMessage = (
-    <p className="py-8 text-center text-muted-foreground">
-      No earnings yet. Add one above.
-    </p>
+    <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+      <Inbox className="size-12 shrink-0 text-muted-foreground/70" aria-hidden />
+      <p className="text-muted-foreground">
+        No earnings yet. Add one above.
+      </p>
+    </div>
   );
 
   return (
@@ -133,12 +127,6 @@ export default function EarningTable({
             </Column>
             <Column>
               <span className="flex items-center gap-1.5">
-                <CreditCard className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                Payment
-              </span>
-            </Column>
-            <Column>
-              <span className="flex items-center gap-1.5">
                 <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                 Note
               </span>
@@ -148,8 +136,11 @@ export default function EarningTable({
           <TableBody>
             {earnings.length === 0 ? (
               <Row>
-                <Cell colSpan={7} className="h-24 text-center text-muted-foreground">
-                  No earnings yet. Add one above.
+                <Cell colSpan={6} className="h-24">
+                  <div className="flex flex-col items-center justify-center gap-2 text-center text-muted-foreground">
+                    <Inbox className="size-10 shrink-0 text-muted-foreground/70" aria-hidden />
+                    <span>No earnings yet. Add one above.</span>
+                  </div>
                 </Cell>
               </Row>
             ) : (
@@ -300,7 +291,7 @@ function EarningActionsMenu({
         />
       )}
       <Dialog open={actions.deleteConfirmOpen} onOpenChange={actions.setDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-[380px]">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-[380px] max-h-[85vh] overflow-y-auto sm:w-full">
           <DialogHeader>
             <DialogTitle>Delete earning?</DialogTitle>
           </DialogHeader>
@@ -351,9 +342,6 @@ function EarningRow({
       <Cell className="min-w-0 max-w-[140px] truncate text-muted-foreground">
         {earning.fromWhom ?? "—"}
       </Cell>
-      <Cell>
-        <PaymentMethodTag method={earning.paymentMethod} />
-      </Cell>
       <Cell className="min-w-0 max-w-[200px] truncate text-muted-foreground">
         {earning.note ?? "—"}
       </Cell>
@@ -375,7 +363,7 @@ function EarningCard({
 
   return (
     <article
-      className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-4 shadow-sm"
+      className="flex min-w-0 flex-col gap-3 overflow-hidden rounded-lg border border-border bg-background p-4 shadow-sm"
       aria-label={`Earning: ${formatAmount(earning.amountCents)}`}
     >
       <div className="flex min-w-0 items-start gap-3">
@@ -403,12 +391,6 @@ function EarningCard({
                 {earning.fromWhom}
               </span>
             )}
-            {earning.paymentMethod && (
-              <span className="flex items-center gap-1.5">
-                <CreditCard className="size-4 shrink-0" aria-hidden />
-                <PaymentMethodTag method={earning.paymentMethod} />
-              </span>
-            )}
             {earning.note && (
               <span className="flex items-center gap-1.5 min-w-0 truncate">
                 <FileText className="size-4 shrink-0" aria-hidden />
@@ -417,63 +399,8 @@ function EarningCard({
             )}
           </div>
         </div>
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => actions.setEditModalOpen(true)}
-            isDisabled={actions.loading}
-            aria-label="Edit earning"
-            className="min-h-[44px] min-w-[44px]"
-          >
-            <Pencil className="size-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => actions.setDeleteConfirmOpen(true)}
-            isDisabled={actions.loading}
-            aria-label="Delete earning"
-            className="min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
-          >
-            <Trash2 className="size-5" />
-          </Button>
-        </div>
+        <EarningActionsMenu earning={earning} actions={actions} onUpdated={onUpdated} />
       </div>
-      {actions.editModalOpen && (
-        <EditEarningModal
-          earning={earning}
-          onClose={() => actions.setEditModalOpen(false)}
-          onSaved={onUpdated}
-        />
-      )}
-      <Dialog open={actions.deleteConfirmOpen} onOpenChange={actions.setDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-[380px]">
-          <DialogHeader>
-            <DialogTitle>Delete earning?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This earning will be permanently deleted. This cannot be undone.
-          </p>
-          <div className="flex gap-2 justify-end mt-4">
-            <button
-              type="button"
-              onClick={() => actions.setDeleteConfirmOpen(false)}
-              className="min-h-[44px] min-w-[44px] rounded-lg border border-border bg-background px-4 py-3 text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={actions.handleDelete}
-              disabled={actions.loading}
-              className="min-h-[44px] min-w-[44px] rounded-lg bg-destructive px-4 py-3 text-destructive-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              {actions.loading ? "Deleting…" : "Delete"}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </article>
   );
 }

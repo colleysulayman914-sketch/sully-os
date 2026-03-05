@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Banknote, Calendar, CreditCard, FileText, Plus, Tag, User } from "lucide-react";
 import type { EarningCategory, ExpensePaymentMethod } from "@/types/earning";
 import { EARNING_CATEGORIES, PAYMENT_METHODS } from "@/types/earning";
 
@@ -74,8 +75,9 @@ export default function AddEarningForm({ onAdded }: AddEarningFormProps) {
       <div>
         <label
           htmlFor="earning-amount"
-          className="mb-1 block text-sm font-medium text-foreground"
+          className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground"
         >
+          <Banknote className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           Amount (D)
         </label>
         <input
@@ -94,8 +96,9 @@ export default function AddEarningForm({ onAdded }: AddEarningFormProps) {
       <div>
         <label
           htmlFor="earning-date"
-          className="mb-1 block text-sm font-medium text-foreground"
+          className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground"
         >
+          <Calendar className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           Date
         </label>
         <input
@@ -110,8 +113,9 @@ export default function AddEarningForm({ onAdded }: AddEarningFormProps) {
       <div>
         <label
           htmlFor="earning-category"
-          className="mb-1 block text-sm font-medium text-foreground"
+          className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground"
         >
+          <Tag className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           Category
         </label>
         <select
@@ -134,8 +138,9 @@ export default function AddEarningForm({ onAdded }: AddEarningFormProps) {
       <div>
         <label
           htmlFor="earning-fromWhom"
-          className="mb-1 block text-sm font-medium text-foreground"
+          className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground"
         >
+          <User className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           From whom
         </label>
         <input
@@ -151,8 +156,9 @@ export default function AddEarningForm({ onAdded }: AddEarningFormProps) {
       <div>
         <label
           htmlFor="earning-paymentMethod"
-          className="mb-1 block text-sm font-medium text-foreground"
+          className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground"
         >
+          <CreditCard className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           Payment method
         </label>
         <select
@@ -175,8 +181,9 @@ export default function AddEarningForm({ onAdded }: AddEarningFormProps) {
       <div>
         <label
           htmlFor="earning-note"
-          className="mb-1 block text-sm font-medium text-foreground"
+          className="mb-1 flex items-center gap-1.5 text-sm font-medium text-foreground"
         >
+          <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           Note (optional)
         </label>
         <input
@@ -198,8 +205,9 @@ export default function AddEarningForm({ onAdded }: AddEarningFormProps) {
             parseFloat(amountDollars) <= 0 ||
             !date.trim()
           }
-          className="min-h-[44px] min-w-[44px] flex-1 rounded-lg bg-foreground px-5 py-3 text-background hover:opacity-90 disabled:opacity-50"
+          className="flex min-h-[44px] min-w-[44px] flex-1 items-center justify-center gap-2 rounded-lg bg-foreground px-5 py-3 text-background hover:opacity-90 disabled:opacity-50"
         >
+          <Plus className="size-5 shrink-0" aria-hidden />
           {loading ? "Adding…" : "Add earning"}
         </button>
       </div>

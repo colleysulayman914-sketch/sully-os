@@ -418,63 +418,8 @@ function ExpenseCard({
             )}
           </div>
         </div>
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => actions.setEditModalOpen(true)}
-            isDisabled={actions.loading}
-            aria-label="Edit expense"
-            className="min-h-[44px] min-w-[44px]"
-          >
-            <Pencil className="size-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => actions.setDeleteConfirmOpen(true)}
-            isDisabled={actions.loading}
-            aria-label="Delete expense"
-            className="min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
-          >
-            <Trash2 className="size-5" />
-          </Button>
-        </div>
+        <ExpenseActionsMenu expense={expense} actions={actions} onUpdated={onUpdated} />
       </div>
-      {actions.editModalOpen && (
-        <EditExpenseModal
-          expense={expense}
-          onClose={() => actions.setEditModalOpen(false)}
-          onSaved={onUpdated}
-        />
-      )}
-      <Dialog open={actions.deleteConfirmOpen} onOpenChange={actions.setDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-[380px]">
-          <DialogHeader>
-            <DialogTitle>Delete expense?</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This expense will be permanently deleted. This cannot be undone.
-          </p>
-          <div className="flex gap-2 justify-end mt-4">
-            <button
-              type="button"
-              onClick={() => actions.setDeleteConfirmOpen(false)}
-              className="min-h-[44px] min-w-[44px] rounded-lg border border-border bg-background px-4 py-3 text-foreground hover:bg-muted"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={actions.handleDelete}
-              disabled={actions.loading}
-              className="min-h-[44px] min-w-[44px] rounded-lg bg-destructive px-4 py-3 text-destructive-foreground hover:opacity-90 disabled:opacity-50"
-            >
-              {actions.loading ? "Deleting…" : "Delete"}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </article>
   );
 }
