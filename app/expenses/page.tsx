@@ -18,6 +18,7 @@ export default async function ExpensesPage({
     category?: string;
     dateFrom?: string;
     dateTo?: string;
+    openAdd?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -28,6 +29,7 @@ export default async function ExpensesPage({
       : undefined;
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
+  const openAdd = params.openAdd === "1";
 
   const initial = await getExpenses({
     page,
@@ -53,6 +55,7 @@ export default async function ExpensesPage({
             categoryFilter={categoryFilter ?? ""}
             dateFrom={dateFrom ?? ""}
             dateTo={dateTo ?? ""}
+            openAdd={openAdd}
           />
         </div>
       </main>

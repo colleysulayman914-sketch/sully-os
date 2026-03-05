@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Banknote, Calendar, CirclePlus, Filter, Tags } from "lucide-react";
 import type { EarningListResponse, EarningCategory } from "@/types/earning";
@@ -21,6 +21,7 @@ type EarningsPageClientProps = {
   categoryFilter: "" | EarningCategory;
   dateFrom: string;
   dateTo: string;
+  openAdd?: boolean;
 };
 
 function buildEarningsUrl(params: {
@@ -44,10 +45,23 @@ export default function EarningsPageClient({
   categoryFilter,
   dateFrom,
   dateTo,
+  openAdd = false,
 }: EarningsPageClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(openAdd);
+
+  useEffect(() => {
+    if (openAdd) {
+      const url = buildEarningsUrl({
+        page: currentPage,
+        category: categoryFilter || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
+      router.replace(url, { scroll: false });
+    }
+  }, [openAdd, currentPage, categoryFilter, dateFrom, dateTo, router]);
 
   const handleAdded = () => {
     setAddModalOpen(false);

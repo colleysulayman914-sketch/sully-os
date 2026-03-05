@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, CirclePlus, Tags } from "lucide-react";
 import type { ExpenseListResponse, ExpenseCategory } from "@/types/expense";
@@ -21,6 +21,7 @@ type ExpensesPageClientProps = {
   categoryFilter: "" | ExpenseCategory;
   dateFrom: string;
   dateTo: string;
+  openAdd?: boolean;
 };
 
 function buildExpensesUrl(params: {
@@ -44,10 +45,23 @@ export default function ExpensesPageClient({
   categoryFilter,
   dateFrom,
   dateTo,
+  openAdd = false,
 }: ExpensesPageClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(openAdd);
+
+  useEffect(() => {
+    if (openAdd) {
+      const url = buildExpensesUrl({
+        page: currentPage,
+        category: categoryFilter || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
+      router.replace(url, { scroll: false });
+    }
+  }, [openAdd, currentPage, categoryFilter, dateFrom, dateTo, router]);
 
   const handleAdded = () => {
     setAddModalOpen(false);

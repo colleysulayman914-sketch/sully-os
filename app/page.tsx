@@ -25,37 +25,51 @@ export default async function Home() {
     year: "numeric",
   });
 
+  const netCents = totalEarnings - totalExpenses;
+
   return (
     <AppShell>
       <main className="px-4 pb-8 pt-4 sm:px-6 overflow-x-hidden">
         <div className="mx-auto max-w-3xl min-w-0">
-          <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight sm:block hidden">
             Overview
           </h1>
-          <p className="mt-2 text-foreground/70">
+          <p className="mt-2 text-foreground/70 sm:block hidden">
             Track your expenses, view transactions, and manage your budget.
           </p>
 
+          {/* Hero balance card (mobile-first) */}
+          <section className="mt-6 min-w-0" aria-label={`Net balance for ${monthLabel}`}>
+            <div className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-foreground p-5 text-background shadow-sm sm:p-6">
+              <span className="text-sm font-medium text-background/80">Net this month</span>
+              <p className="text-2xl font-semibold tabular-nums sm:text-3xl">
+                {formatGMD(netCents)}
+              </p>
+              <p className="text-xs text-background/70">{monthLabel}</p>
+            </div>
+          </section>
+
+          {/* Summary row: Income + Expenses */}
           <section
-            className="mt-6 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2"
+            className="mt-4 grid min-w-0 grid-cols-2 gap-3 sm:mt-6 sm:gap-4"
             aria-label={`Monthly totals for ${monthLabel}`}
           >
-            <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-4 shadow-sm sm:p-5">
-              <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-background p-4 shadow-sm sm:p-5">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                 <ArrowUpCircle className="size-5 shrink-0" aria-hidden />
-                <span className="text-sm font-medium">Total monthly earnings</span>
+                <span className="text-sm font-medium">Income</span>
               </div>
-              <p className="text-xl font-semibold text-foreground tabular-nums sm:text-2xl">
+              <p className="text-lg font-semibold text-foreground tabular-nums sm:text-xl">
                 {formatGMD(totalEarnings)}
               </p>
               <p className="text-xs text-muted-foreground">{monthLabel}</p>
             </div>
-            <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-4 shadow-sm sm:p-5">
-              <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-border bg-background p-4 shadow-sm sm:p-5">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                 <ArrowDownCircle className="size-5 shrink-0" aria-hidden />
-                <span className="text-sm font-medium">Total monthly expenses</span>
+                <span className="text-sm font-medium">Expenses</span>
               </div>
-              <p className="text-xl font-semibold text-foreground tabular-nums sm:text-2xl">
+              <p className="text-lg font-semibold text-foreground tabular-nums sm:text-xl">
                 {formatGMD(totalExpenses)}
               </p>
               <p className="text-xs text-muted-foreground">{monthLabel}</p>

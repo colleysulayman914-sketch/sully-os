@@ -18,6 +18,7 @@ export default async function EarningsPage({
     category?: string;
     dateFrom?: string;
     dateTo?: string;
+    openAdd?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -28,6 +29,7 @@ export default async function EarningsPage({
       : undefined;
   const dateFrom = params.dateFrom?.trim() || undefined;
   const dateTo = params.dateTo?.trim() || undefined;
+  const openAdd = params.openAdd === "1";
 
   const initial = await getEarnings({
     page,
@@ -53,6 +55,7 @@ export default async function EarningsPage({
             categoryFilter={categoryFilter ?? ""}
             dateFrom={dateFrom ?? ""}
             dateTo={dateTo ?? ""}
+            openAdd={openAdd}
           />
         </div>
       </main>

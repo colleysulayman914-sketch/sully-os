@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/ui/sidebar-with-submenu";
 import AppHeader from "@/components/AppHeader";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 type AppShellProps = { children: React.ReactNode };
 
@@ -37,10 +38,11 @@ export default function AppShell({ children }: AppShellProps) {
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
-      <div className="relative min-h-screen w-full sm:pl-80">
+      <div className="relative min-h-screen w-full pb-20 sm:pb-0 sm:pl-80">
         <AppHeader onMenuClick={() => setSidebarOpen(true)} />
         {children}
       </div>
+      <MobileBottomNav />
     </div>
   );
 }
