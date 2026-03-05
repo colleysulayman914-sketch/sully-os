@@ -1,6 +1,9 @@
 export const TODO_STATUSES = ["pending", "cancel", "completed", "archived"] as const;
 export type TodoStatus = (typeof TODO_STATUSES)[number];
 
+export const TODO_PRIORITIES = ["low", "medium", "high"] as const;
+export type TodoPriority = (typeof TODO_PRIORITIES)[number];
+
 /** Display-only status: "overdue" when due date is past and task not completed/archived */
 export type DisplayStatus = TodoStatus | "overdue";
 
@@ -21,6 +24,7 @@ export type Todo = {
   title: string;
   completed: boolean;
   status: TodoStatus;
+  priority: TodoPriority | null;
   dueDate: Date | null;
   createdAt: Date;
 };
@@ -28,13 +32,15 @@ export type Todo = {
 export type CreateTodoInput = {
   title: string;
   status?: TodoStatus;
-  dueDate?: string | null; // ISO date string YYYY-MM-DD
+  priority?: TodoPriority | null;
+  dueDate?: string | null; // ISO date string or datetime-local YYYY-MM-DDTHH:mm
 };
 
 export type UpdateTodoInput = {
   title?: string;
   completed?: boolean;
   status?: TodoStatus;
+  priority?: TodoPriority | null;
   dueDate?: string | null;
 };
 

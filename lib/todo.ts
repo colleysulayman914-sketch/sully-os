@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
-import type { Todo, TodoListParams, TodoListResponse, TodoStatus } from "@/types/todo";
+import type { Todo, TodoListParams, TodoListResponse, TodoPriority, TodoStatus } from "@/types/todo";
 
 const STATUSES: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
+const PRIORITIES: TodoPriority[] = ["low", "medium", "high"];
 
 export async function getTodos(params: TodoListParams = {}): Promise<TodoListResponse> {
   const page = Math.max(1, params.page ?? 1);
@@ -28,6 +29,7 @@ export async function getTodos(params: TodoListParams = {}): Promise<TodoListRes
     title: t.title,
     completed: t.completed,
     status: (t.status ?? "pending") as TodoStatus,
+    priority: t.priority && PRIORITIES.includes(t.priority as TodoPriority) ? (t.priority as TodoPriority) : null,
     dueDate: t.dueDate,
     createdAt: t.createdAt,
   }));

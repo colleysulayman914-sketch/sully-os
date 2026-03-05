@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { TodoStatus } from "@/types/todo";
+import { toast } from "sonner";
+import type { TodoPriority, TodoStatus } from "@/types/todo";
 
 const STATUS_OPTIONS: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
+const PRIORITY_OPTIONS: TodoPriority[] = ["low", "medium", "high"];
 
 type AddTodoFormProps = {
   onAdded: () => void;
@@ -12,7 +14,8 @@ type AddTodoFormProps = {
 export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<TodoStatus>("pending");
-  const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState<TodoPriority | "">("");
+  const [dueDateTime, setDueDateTime] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,20 +32,26 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
         body: JSON.stringify({
           title: trimmed,
           status,
-          dueDate: dueDate || null,
+          priority: priority || null,
+          dueDate: dueDateTime || null,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error ?? "Failed to add task");
+        const message = data?.error ?? "Failed to add task";
+        setError(message);
+        toast.error(message);
         return;
       }
       setTitle("");
       setStatus("pending");
-      setDueDate("");
+      setPriority("");
+      setDueDateTime("");
+      toast.success("Task added");
       onAdded();
     } catch {
       setError("Failed to add task");
+      toast.error("Failed to add task");
     } finally {
       setLoading(false);
     }
@@ -84,14 +93,33 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
         </select>
       </div>
       <div>
+        <label htmlFor="todo-priority-add" className="mb-1 block text-sm font-medium text-foreground">
+          Priority
+        </label>
+        <select
+          id="todo-priority-add"
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as TodoPriority | "")}
+          disabled={loading}
+          className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
+        >
+          <option value="">None</option>
+          {PRIORITY_OPTIONS.map((p) => (
+            <option key={p} value={p}>
+              {p.charAt(0).toUpperCase() + p.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
         <label htmlFor="todo-due-add" className="mb-1 block text-sm font-medium text-foreground">
-          Due date
+          Due date & time
         </label>
         <input
           id="todo-due-add"
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
+          type="datetime-local"
+          value={dueDateTime}
+          onChange={(e) => setDueDateTime(e.target.value)}
           disabled={loading}
           className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Todo, TodoStatus } from "@/types/todo";
+import { toast } from "sonner";
+import type { Todo, TodoPriority, TodoStatus } from "@/types/todo";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 
 const STATUS_OPTIONS: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
+const PRIORITY_OPTIONS: TodoPriority[] = ["low", "medium", "high"];
 
 type EditTodoModalProps = {
   todo: Todo;
@@ -17,23 +19,26 @@ type EditTodoModalProps = {
   onSaved: () => void;
 };
 
-function toDateInputValue(d: Date | null): string {
+/** Format Date for datetime-local input (YYYY-MM-DDTHH:mm) */
+function toDateTimeLocalValue(d: Date | null): string {
   if (!d) return "";
   const date = new Date(d);
-  return date.toISOString().slice(0, 10);
+  return date.toISOString().slice(0, 16);
 }
 
 export default function EditTodoModal({ todo, onClose, onSaved }: EditTodoModalProps) {
   const [title, setTitle] = useState(todo.title);
   const [status, setStatus] = useState<TodoStatus>(todo.status);
-  const [dueDate, setDueDate] = useState(toDateInputValue(todo.dueDate));
+  const [priority, setPriority] = useState<TodoPriority | "">(todo.priority ?? "");
+  const [dueDateTime, setDueDateTime] = useState(toDateTimeLocalValue(todo.dueDate));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setTitle(todo.title);
     setStatus(todo.status);
-    setDueDate(toDateInputValue(todo.dueDate));
+    setPriority(todo.priority ?? "");
+    setDueDateTime(toDateTimeLocalValue(todo.dueDate));
   }, [todo]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -49,18 +54,23 @@ export default function EditTodoModal({ todo, onClose, onSaved }: EditTodoModalP
         body: JSON.stringify({
           title: trimmed,
           status,
-          dueDate: dueDate || null,
+          priority: priority || null,
+          dueDate: dueDateTime || null,
         }),
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data?.error ?? "Failed to update");
+        const message = data?.error ?? "Failed to update";
+        setError(message);
+        toast.error(message);
         return;
       }
+      toast.success("Task updated");
       onSaved();
       onClose();
     } catch {
       setError("Failed to update");
+      toast.error("Failed to update");
     } finally {
       setLoading(false);
     }
@@ -106,14 +116,33 @@ export default function EditTodoModal({ todo, onClose, onSaved }: EditTodoModalP
             </select>
           </div>
           <div>
+            <label htmlFor="edit-todo-priority" className="mb-1 block text-sm font-medium text-foreground">
+              Priority
+            </label>
+            <select
+              id="edit-todo-priority"
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as TodoPriority | "")}
+              disabled={loading}
+              className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
+            >
+              <option value="">None</option>
+              {PRIORITY_OPTIONS.map((p) => (
+                <option key={p} value={p}>
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
             <label htmlFor="edit-todo-due" className="mb-1 block text-sm font-medium text-foreground">
-              Due date
+              Due date & time
             </label>
             <input
               id="edit-todo-due"
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              type="datetime-local"
+              value={dueDateTime}
+              onChange={(e) => setDueDateTime(e.target.value)}
               disabled={loading}
               className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />

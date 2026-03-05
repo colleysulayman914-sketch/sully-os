@@ -12,6 +12,7 @@ model Todo {
   title     String
   completed Boolean   @default(false)
   status    String    @default("pending") // pending | cancel | completed | archived
+  priority  String?   // low | medium | high
   dueDate   DateTime?
   createdAt DateTime  @default(now())
 }

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import type { Todo, TodoStatus } from "@/types/todo";
 import type { DisplayStatus } from "@/types/todo";
 import { getDisplayStatus } from "@/types/todo";
@@ -55,6 +56,16 @@ function formatDate(d: Date) {
   });
 }
 
+function formatDateTime(d: Date) {
+  return new Date(d).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -93,6 +104,7 @@ export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
             </Column>
             <Column isRowHeader>Title</Column>
             <Column>Status</Column>
+            <Column>Priority</Column>
             <Column>Due</Column>
             <Column>Created</Column>
             <Column width={56}>Actions</Column>
@@ -100,7 +112,7 @@ export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
           <TableBody>
             {todos.length === 0 ? (
               <Row>
-                <Cell colSpan={6} className="h-24 text-center text-muted-foreground">
+                <Cell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No tasks yet. Add one above.
                 </Cell>
               </Row>
@@ -138,7 +150,16 @@ function useTodoActions(todo: Todo, onUpdated: () => void): TodoActions {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed: !todo.completed }),
     })
-      .then((res) => res.ok && onUpdated())
+      .then(async (res) => {
+        if (res.ok) {
+          toast.success("Task updated");
+          onUpdated();
+        } else {
+          const data = await res.json();
+          toast.error(data?.error ?? "Failed to update task");
+        }
+      })
+      .catch(() => toast.error("Failed to update task"))
       .finally(() => setLoading(false));
   }, [todo.id, onUpdated]);
 
@@ -149,7 +170,16 @@ function useTodoActions(todo: Todo, onUpdated: () => void): TodoActions {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "archived" }),
     })
-      .then((res) => res.ok && onUpdated())
+      .then(async (res) => {
+        if (res.ok) {
+          toast.success("Archived");
+          onUpdated();
+        } else {
+          const data = await res.json();
+          toast.error(data?.error ?? "Failed to archive");
+        }
+      })
+      .catch(() => toast.error("Failed to archive"))
       .finally(() => setLoading(false));
   }, [todo.id, onUpdated]);
 
@@ -160,7 +190,16 @@ function useTodoActions(todo: Todo, onUpdated: () => void): TodoActions {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed: true, status: "completed" }),
     })
-      .then((res) => res.ok && onUpdated())
+      .then(async (res) => {
+        if (res.ok) {
+          toast.success("Marked complete");
+          onUpdated();
+        } else {
+          const data = await res.json();
+          toast.error(data?.error ?? "Failed to update");
+        }
+      })
+      .catch(() => toast.error("Failed to update"))
       .finally(() => setLoading(false));
   }, [todo.id, onUpdated]);
 
@@ -171,7 +210,16 @@ function useTodoActions(todo: Todo, onUpdated: () => void): TodoActions {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ completed: false, status: "pending" }),
     })
-      .then((res) => res.ok && onUpdated())
+      .then(async (res) => {
+        if (res.ok) {
+          toast.success("Marked incomplete");
+          onUpdated();
+        } else {
+          const data = await res.json();
+          toast.error(data?.error ?? "Failed to update");
+        }
+      })
+      .catch(() => toast.error("Failed to update"))
       .finally(() => setLoading(false));
   }, [todo.id, onUpdated]);
 
@@ -179,7 +227,16 @@ function useTodoActions(todo: Todo, onUpdated: () => void): TodoActions {
     if (!confirm("Delete this task?")) return;
     setLoading(true);
     fetch(`/api/todo/${todo.id}`, { method: "DELETE" })
-      .then((res) => res.ok && onUpdated())
+      .then(async (res) => {
+        if (res.ok) {
+          toast.success("Task deleted");
+          onUpdated();
+        } else {
+          const data = await res.json();
+          toast.error(data?.error ?? "Failed to delete");
+        }
+      })
+      .catch(() => toast.error("Failed to delete"))
       .finally(() => setLoading(false));
   }, [todo.id, onUpdated]);
 
@@ -372,8 +429,11 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
       <Cell>
         <StatusTag displayStatus={getDisplayStatus(todo)} />
       </Cell>
+      <Cell className="capitalize text-muted-foreground">
+        {todo.priority ?? "—"}
+      </Cell>
       <Cell className="text-muted-foreground">
-        {todo.dueDate ? formatDate(todo.dueDate) : "—"}
+        {todo.dueDate ? formatDateTime(todo.dueDate) : "—"}
       </Cell>
       <Cell className="text-muted-foreground">{formatDate(todo.createdAt)}</Cell>
       <Cell>
@@ -411,8 +471,13 @@ function TodoCard({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <StatusTag displayStatus={getDisplayStatus(todo)} />
+            {todo.priority && (
+              <span className="text-xs capitalize text-muted-foreground">
+                {todo.priority}
+              </span>
+            )}
             <span className="text-xs text-muted-foreground">
-              Due: {todo.dueDate ? formatDate(todo.dueDate) : "—"}
+              Due: {todo.dueDate ? formatDateTime(todo.dueDate) : "—"}
             </span>
           </div>
         </div>
