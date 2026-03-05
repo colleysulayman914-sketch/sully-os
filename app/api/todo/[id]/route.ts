@@ -102,13 +102,14 @@ export async function PATCH(
       }
     }
     const rawRule = body?.repeatRule;
-    const repeatRule =
-      rawRule !== undefined
-        ? rawRule === null || rawRule === ""
-          ? null
-          : typeof rawRule === "string" && REPEAT_RULES.includes(rawRule as TodoRepeatRule)
-            ? rawRule
-            : undefined;
+    let repeatRule: TodoRepeatRule | null | undefined = undefined;
+    if (rawRule !== undefined) {
+      if (rawRule === null || rawRule === "") {
+        repeatRule = null;
+      } else if (typeof rawRule === "string" && REPEAT_RULES.includes(rawRule as TodoRepeatRule)) {
+        repeatRule = rawRule as TodoRepeatRule;
+      }
+    }
     let repeatInterval: number | null | undefined = undefined;
     let repeatUnit: TodoRepeatUnit | null | undefined = undefined;
     if (repeatRule !== undefined) {
