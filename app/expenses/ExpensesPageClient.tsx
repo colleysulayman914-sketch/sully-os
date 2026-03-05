@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Calendar, CirclePlus, Tags } from "lucide-react";
 import type { ExpenseListResponse, ExpenseCategory } from "@/types/expense";
 import { EXPENSE_CATEGORIES } from "@/types/expense";
 import AddExpenseForm from "./AddExpenseForm";
@@ -111,49 +112,67 @@ export default function ExpensesPageClient({
   return (
     <div className="mt-6 flex min-w-0 flex-col gap-6">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <label htmlFor="expense-filter-category" className="sr-only">
             Filter by category
           </label>
-          <select
-            id="expense-filter-category"
-            value={categoryFilter}
-            onChange={handleCategoryChange}
-            className="min-h-[44px] w-full rounded-md border border-input bg-background px-4 py-2 text-foreground sm:w-auto sm:min-w-[180px]"
-          >
-            <option value="">All categories</option>
-            {EXPENSE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <label htmlFor="expense-filter-dateFrom" className="sr-only">
-            From date
-          </label>
-          <input
-            id="expense-filter-dateFrom"
-            type="date"
-            value={dateFrom}
-            onChange={handleDateFromChange}
-            className="min-h-[44px] w-full rounded-md border border-input bg-background px-4 py-2 text-foreground sm:w-auto"
-          />
-          <label htmlFor="expense-filter-dateTo" className="sr-only">
-            To date
-          </label>
-          <input
-            id="expense-filter-dateTo"
-            type="date"
-            value={dateTo}
-            onChange={handleDateToChange}
-            className="min-h-[44px] w-full rounded-md border border-input bg-background px-4 py-2 text-foreground sm:w-auto"
-          />
+          <div className="relative flex min-w-0 flex-1 sm:min-w-0 sm:w-auto sm:max-w-[200px]">
+            <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 text-muted-foreground" aria-hidden>
+              <Tags className="size-5" />
+            </span>
+            <select
+              id="expense-filter-category"
+              value={categoryFilter}
+              onChange={handleCategoryChange}
+              className="min-h-[44px] w-full rounded-md border border-input bg-background py-2 pl-10 pr-4 text-foreground sm:min-w-[180px]"
+            >
+              <option value="">All categories</option>
+              {EXPENSE_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:flex-1 sm:items-center sm:gap-2">
+            <label htmlFor="expense-filter-dateFrom" className="sr-only">
+              From date
+            </label>
+            <div className="relative flex min-w-0 flex-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 text-muted-foreground" aria-hidden>
+                <Calendar className="size-5" />
+              </span>
+              <input
+                id="expense-filter-dateFrom"
+                type="date"
+                value={dateFrom}
+                onChange={handleDateFromChange}
+                className="min-h-[44px] w-full rounded-md border border-input bg-background py-2 pl-10 pr-3 text-foreground sm:min-w-0"
+              />
+            </div>
+            <label htmlFor="expense-filter-dateTo" className="sr-only">
+              To date
+            </label>
+            <div className="relative flex min-w-0 flex-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 text-muted-foreground" aria-hidden>
+                <Calendar className="size-5" />
+              </span>
+              <input
+                id="expense-filter-dateTo"
+                type="date"
+                value={dateTo}
+                onChange={handleDateToChange}
+                className="min-h-[44px] w-full rounded-md border border-input bg-background py-2 pl-10 pr-3 text-foreground sm:min-w-0"
+              />
+            </div>
+          </div>
         </div>
         <button
           type="button"
           onClick={() => setAddModalOpen(true)}
-          className="min-h-[44px] shrink-0 rounded-lg bg-foreground px-5 py-3 text-background hover:opacity-90 sm:px-6"
+          className="flex min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-lg bg-foreground px-5 py-3 text-background hover:opacity-90 sm:px-6"
         >
+          <CirclePlus className="size-5 shrink-0" aria-hidden />
           Add expense
         </button>
       </div>

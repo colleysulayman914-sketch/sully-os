@@ -19,7 +19,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  Banknote,
+  Calendar,
+  CreditCard,
+  FileText,
+  MoreVertical,
+  Pencil,
+  Tag,
+  Trash2,
+  User,
+} from "lucide-react";
 import EditExpenseModal from "./EditExpenseModal";
 
 type ExpenseTableProps = {
@@ -78,12 +88,42 @@ export default function ExpenseTable({
       <div className="relative hidden min-w-0 max-w-full overflow-auto rounded-md border border-border bg-background md:block">
         <Table aria-label="Expense list">
           <TableHeader>
-            <Column isRowHeader>Amount</Column>
-            <Column>Date</Column>
-            <Column>Category</Column>
-            <Column>To whom</Column>
-            <Column>Payment method</Column>
-            <Column>Note</Column>
+            <Column isRowHeader>
+              <span className="flex items-center gap-1.5">
+                <Banknote className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                Amount
+              </span>
+            </Column>
+            <Column>
+              <span className="flex items-center gap-1.5">
+                <Calendar className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                Date
+              </span>
+            </Column>
+            <Column>
+              <span className="flex items-center gap-1.5">
+                <Tag className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                Category
+              </span>
+            </Column>
+            <Column>
+              <span className="flex items-center gap-1.5">
+                <User className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                To whom
+              </span>
+            </Column>
+            <Column>
+              <span className="flex items-center gap-1.5">
+                <CreditCard className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                Payment
+              </span>
+            </Column>
+            <Column>
+              <span className="flex items-center gap-1.5">
+                <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                Note
+              </span>
+            </Column>
             <Column width={56}>Actions</Column>
           </TableHeader>
           <TableBody>
@@ -319,14 +359,44 @@ function ExpenseCard({
       className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-4 shadow-sm"
       aria-label={`Expense: ${formatAmount(expense.amountCents)}`}
     >
-      <div className="flex min-w-0 items-start justify-between gap-2">
-        <div>
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <Banknote className="size-5" aria-hidden />
+        </div>
+        <div className="min-w-0 flex-1">
           <p className="font-medium text-foreground">
             {formatAmount(expense.amountCents)}
           </p>
-          <p className="text-sm text-muted-foreground">
-            {formatDate(expense.date)}
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="size-4 shrink-0" aria-hidden />
+              {formatDate(expense.date)}
+            </span>
+            {expense.category && (
+              <span className="flex items-center gap-1.5">
+                <Tag className="size-4 shrink-0" aria-hidden />
+                {expense.category}
+              </span>
+            )}
+            {expense.toWhom && (
+              <span className="flex items-center gap-1.5 min-w-0 truncate">
+                <User className="size-4 shrink-0" aria-hidden />
+                {expense.toWhom}
+              </span>
+            )}
+            {expense.paymentMethod && (
+              <span className="flex items-center gap-1.5">
+                <CreditCard className="size-4 shrink-0" aria-hidden />
+                {expense.paymentMethod}
+              </span>
+            )}
+            {expense.note && (
+              <span className="flex items-center gap-1.5 min-w-0 truncate">
+                <FileText className="size-4 shrink-0" aria-hidden />
+                <span className="truncate">{expense.note}</span>
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex shrink-0 gap-1">
           <Button
@@ -350,14 +420,6 @@ function ExpenseCard({
             <Trash2 className="size-5" />
           </Button>
         </div>
-      </div>
-      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-        {expense.category && <span>{expense.category}</span>}
-        {expense.toWhom && <span>To: {expense.toWhom}</span>}
-        {expense.paymentMethod && <span>{expense.paymentMethod}</span>}
-        {expense.note && (
-          <span className="min-w-0 truncate">{expense.note}</span>
-        )}
       </div>
       {actions.editModalOpen && (
         <EditExpenseModal
