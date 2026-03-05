@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import type { Expense } from "@/types/expense";
 import {
   Cell,
@@ -10,6 +12,15 @@ import {
   TableBody,
   TableHeader,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import EditExpenseModal from "./EditExpenseModal";
 
 type ExpenseTableProps = {
   expenses: Expense[];
@@ -17,9 +28,9 @@ type ExpenseTableProps = {
 };
 
 function formatAmount(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("en-GM", {
     style: "currency",
-    currency: "USD",
+    currency: "GMD",
   }).format(cents / 100);
 }
 
@@ -67,15 +78,18 @@ export default function ExpenseTable({
       <div className="relative hidden min-w-0 max-w-full overflow-auto rounded-md border border-border bg-background md:block">
         <Table aria-label="Expense list">
           <TableHeader>
-            <Column>Amount</Column>
+            <Column isRowHeader>Amount</Column>
             <Column>Date</Column>
             <Column>Category</Column>
+            <Column>To whom</Column>
+            <Column>Payment method</Column>
             <Column>Note</Column>
+            <Column width={56}>Actions</Column>
           </TableHeader>
           <TableBody>
             {expenses.length === 0 ? (
               <Row>
-                <Cell colSpan={4} className="h-24 text-center text-muted-foreground">
+                <Cell colSpan={7} className="h-24 text-center text-muted-foreground">
                   No expenses yet. Add one above.
                 </Cell>
               </Row>
@@ -91,6 +105,172 @@ export default function ExpenseTable({
   );
 }
 
+const menuItemClass =
+  "flex w-full min-h-[44px] items-center gap-2 px-4 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50";
+
+function useExpenseActions(expense: Expense, onUpdated: () => void) {
+  const [loading, setLoading] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const handleDelete = useCallback(() => {
+    setLoading(true);
+    fetch(`/api/expense/${expense.id}`, { method: "DELETE" })
+      .then(async (res) => {
+        if (res.ok) {
+          toast.success("Expense deleted");
+          setDeleteConfirmOpen(false);
+          onUpdated();
+        } else {
+          const data = await res.json();
+          toast.error(data?.error ?? "Failed to delete");
+        }
+      })
+      .catch(() => toast.error("Failed to delete"))
+      .finally(() => setLoading(false));
+  }, [expense.id, onUpdated]);
+
+  return {
+    loading,
+    editModalOpen,
+    setEditModalOpen,
+    deleteConfirmOpen,
+    setDeleteConfirmOpen,
+    handleDelete,
+  };
+}
+
+function ExpenseActionsMenu({
+  expense,
+  actions,
+  onUpdated,
+}: {
+  expense: Expense;
+  actions: ReturnType<typeof useExpenseActions>;
+  onUpdated: () => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      setMenuPosition(null);
+      return;
+    }
+    const btn = triggerRef.current?.querySelector("button");
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      )
+        return;
+      setMenuOpen(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [menuOpen]);
+
+  return (
+    <div className="relative flex justify-end" ref={triggerRef}>
+      <Button
+        variant="ghost"
+        size="icon"
+        onPress={() => setMenuOpen((o) => !o)}
+        isDisabled={actions.loading}
+        aria-label="More actions"
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        className="min-h-[44px] min-w-[44px]"
+      >
+        <MoreVertical className="size-5" />
+      </Button>
+      {menuOpen &&
+        menuPosition &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            className="fixed z-50 min-w-[160px] rounded-md border border-border bg-background py-1 shadow-lg"
+            style={{ top: menuPosition.top, right: menuPosition.right }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                actions.setEditModalOpen(true);
+              }}
+              disabled={actions.loading}
+              className={menuItemClass}
+            >
+              <Pencil className="size-4 shrink-0" />
+              Edit
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setMenuOpen(false);
+                actions.setDeleteConfirmOpen(true);
+              }}
+              disabled={actions.loading}
+              className={`${menuItemClass} text-destructive hover:text-destructive`}
+            >
+              <Trash2 className="size-4 shrink-0" />
+              Delete
+            </button>
+          </div>,
+          document.body
+        )}
+      {actions.editModalOpen && (
+        <EditExpenseModal
+          expense={expense}
+          onClose={() => actions.setEditModalOpen(false)}
+          onSaved={onUpdated}
+        />
+      )}
+      <Dialog open={actions.deleteConfirmOpen} onOpenChange={actions.setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-[380px]">
+          <DialogHeader>
+            <DialogTitle>Delete expense?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This expense will be permanently deleted. This cannot be undone.
+          </p>
+          <div className="flex gap-2 justify-end mt-4">
+            <button
+              type="button"
+              onClick={() => actions.setDeleteConfirmOpen(false)}
+              className="min-h-[44px] min-w-[44px] rounded-lg border border-border bg-background px-4 py-3 text-foreground hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={actions.handleDelete}
+              disabled={actions.loading}
+              className="min-h-[44px] min-w-[44px] rounded-lg bg-destructive px-4 py-3 text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {actions.loading ? "Deleting…" : "Delete"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 function ExpenseRow({
   expense,
   onUpdated,
@@ -98,6 +278,8 @@ function ExpenseRow({
   expense: Expense;
   onUpdated: () => void;
 }) {
+  const actions = useExpenseActions(expense, onUpdated);
+
   return (
     <Row>
       <Cell className="font-medium">{formatAmount(expense.amountCents)}</Cell>
@@ -107,8 +289,17 @@ function ExpenseRow({
       <Cell className="text-muted-foreground">
         {expense.category ?? "—"}
       </Cell>
+      <Cell className="min-w-0 max-w-[140px] truncate text-muted-foreground">
+        {expense.toWhom ?? "—"}
+      </Cell>
+      <Cell className="text-muted-foreground">
+        {expense.paymentMethod ?? "—"}
+      </Cell>
       <Cell className="min-w-0 max-w-[200px] truncate text-muted-foreground">
         {expense.note ?? "—"}
+      </Cell>
+      <Cell>
+        <ExpenseActionsMenu expense={expense} actions={actions} onUpdated={onUpdated} />
       </Cell>
     </Row>
   );
@@ -121,27 +312,87 @@ function ExpenseCard({
   expense: Expense;
   onUpdated: () => void;
 }) {
+  const actions = useExpenseActions(expense, onUpdated);
+
   return (
     <article
       className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-background p-4 shadow-sm"
       aria-label={`Expense: ${formatAmount(expense.amountCents)}`}
     >
       <div className="flex min-w-0 items-start justify-between gap-2">
-        <p className="font-medium text-foreground">
-          {formatAmount(expense.amountCents)}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {formatDate(expense.date)}
-        </p>
+        <div>
+          <p className="font-medium text-foreground">
+            {formatAmount(expense.amountCents)}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {formatDate(expense.date)}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onPress={() => actions.setEditModalOpen(true)}
+            isDisabled={actions.loading}
+            aria-label="Edit expense"
+            className="min-h-[44px] min-w-[44px]"
+          >
+            <Pencil className="size-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onPress={() => actions.setDeleteConfirmOpen(true)}
+            isDisabled={actions.loading}
+            aria-label="Delete expense"
+            className="min-h-[44px] min-w-[44px] text-destructive hover:text-destructive"
+          >
+            <Trash2 className="size-5" />
+          </Button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-        {expense.category && (
-          <span>{expense.category}</span>
-        )}
+        {expense.category && <span>{expense.category}</span>}
+        {expense.toWhom && <span>To: {expense.toWhom}</span>}
+        {expense.paymentMethod && <span>{expense.paymentMethod}</span>}
         {expense.note && (
           <span className="min-w-0 truncate">{expense.note}</span>
         )}
       </div>
+      {actions.editModalOpen && (
+        <EditExpenseModal
+          expense={expense}
+          onClose={() => actions.setEditModalOpen(false)}
+          onSaved={onUpdated}
+        />
+      )}
+      <Dialog open={actions.deleteConfirmOpen} onOpenChange={actions.setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-[380px]">
+          <DialogHeader>
+            <DialogTitle>Delete expense?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This expense will be permanently deleted. This cannot be undone.
+          </p>
+          <div className="flex gap-2 justify-end mt-4">
+            <button
+              type="button"
+              onClick={() => actions.setDeleteConfirmOpen(false)}
+              className="min-h-[44px] min-w-[44px] rounded-lg border border-border bg-background px-4 py-3 text-foreground hover:bg-muted"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={actions.handleDelete}
+              disabled={actions.loading}
+              className="min-h-[44px] min-w-[44px] rounded-lg bg-destructive px-4 py-3 text-destructive-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {actions.loading ? "Deleting…" : "Delete"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </article>
   );
 }

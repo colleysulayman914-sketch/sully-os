@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import type { ExpenseCategory } from "@/types/expense";
-import { EXPENSE_CATEGORIES } from "@/types/expense";
+import type { ExpenseCategory, ExpensePaymentMethod } from "@/types/expense";
+import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from "@/types/expense";
 
 type AddExpenseFormProps = {
   onAdded: () => void;
@@ -13,6 +13,8 @@ export default function AddExpenseForm({ onAdded }: AddExpenseFormProps) {
   const [amountDollars, setAmountDollars] = useState("");
   const [date, setDate] = useState("");
   const [category, setCategory] = useState<ExpenseCategory | "">("");
+  const [toWhom, setToWhom] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<ExpensePaymentMethod | "">("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,8 @@ export default function AddExpenseForm({ onAdded }: AddExpenseFormProps) {
           amountCents,
           date: new Date(date).toISOString(),
           category: category || null,
+          toWhom: toWhom.trim() || null,
+          paymentMethod: paymentMethod || null,
           note: note.trim() || null,
         }),
       });
@@ -52,6 +56,8 @@ export default function AddExpenseForm({ onAdded }: AddExpenseFormProps) {
       setAmountDollars("");
       setDate("");
       setCategory("");
+      setToWhom("");
+      setPaymentMethod("");
       setNote("");
       toast.success("Expense added");
       onAdded();
@@ -70,7 +76,7 @@ export default function AddExpenseForm({ onAdded }: AddExpenseFormProps) {
           htmlFor="expense-amount"
           className="mb-1 block text-sm font-medium text-foreground"
         >
-          Amount ($)
+          Amount (D)
         </label>
         <input
           id="expense-amount"
@@ -121,6 +127,47 @@ export default function AddExpenseForm({ onAdded }: AddExpenseFormProps) {
           {EXPENSE_CATEGORIES.map((c) => (
             <option key={c} value={c}>
               {c}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label
+          htmlFor="expense-toWhom"
+          className="mb-1 block text-sm font-medium text-foreground"
+        >
+          To whom
+        </label>
+        <input
+          id="expense-toWhom"
+          type="text"
+          value={toWhom}
+          onChange={(e) => setToWhom(e.target.value)}
+          placeholder="Who you are giving the money to"
+          disabled={loading}
+          className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+      </div>
+      <div>
+        <label
+          htmlFor="expense-paymentMethod"
+          className="mb-1 block text-sm font-medium text-foreground"
+        >
+          Payment method
+        </label>
+        <select
+          id="expense-paymentMethod"
+          value={paymentMethod}
+          onChange={(e) =>
+            setPaymentMethod(e.target.value as ExpensePaymentMethod | "")
+          }
+          disabled={loading}
+          className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
+        >
+          <option value="">—</option>
+          {PAYMENT_METHODS.map((m) => (
+            <option key={m} value={m}>
+              {m}
             </option>
           ))}
         </select>

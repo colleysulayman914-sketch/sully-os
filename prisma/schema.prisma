@@ -21,10 +21,12 @@ model Todo {
 }
 
 model Expense {
-  id       String    @id @default(cuid())
-  amountCents Int    // amount in cents (e.g. 1999 = $19.99)
-  date     DateTime
-  note     String?
-  category String?   // Food | Transport | Bills | Shopping | Health | Giveaways | Parent Allowances | School Transportation | Other
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  amountCents    Int      // amount in cents (e.g. 1999 = 19.99)
+  date           DateTime
+  note           String?
+  category       String?  // Food | Transport | Bills | ...
+  toWhom         String?  // who the money was given to
+  paymentMethod  String?  // Mobile Money | Cash | Bank Transfer | Card | Other
+  createdAt      DateTime @default(now())
 }

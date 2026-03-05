@@ -4,8 +4,9 @@ import type {
   ExpenseCategory,
   ExpenseListParams,
   ExpenseListResponse,
+  ExpensePaymentMethod,
 } from "@/types/expense";
-import { EXPENSE_CATEGORIES } from "@/types/expense";
+import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from "@/types/expense";
 
 function toExpense(row: {
   id: string;
@@ -13,11 +14,17 @@ function toExpense(row: {
   date: Date;
   note: string | null;
   category: string | null;
+  toWhom: string | null;
+  paymentMethod: string | null;
   createdAt: Date;
 }): Expense {
   const category =
     row.category && EXPENSE_CATEGORIES.includes(row.category as ExpenseCategory)
       ? (row.category as ExpenseCategory)
+      : null;
+  const paymentMethod =
+    row.paymentMethod && PAYMENT_METHODS.includes(row.paymentMethod as ExpensePaymentMethod)
+      ? (row.paymentMethod as ExpensePaymentMethod)
       : null;
   return {
     id: row.id,
@@ -25,6 +32,8 @@ function toExpense(row: {
     date: row.date,
     note: row.note,
     category,
+    toWhom: row.toWhom,
+    paymentMethod,
     createdAt: row.createdAt,
   };
 }

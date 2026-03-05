@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { ExpenseListResponse, ExpenseCategory } from "@/types/expense";
+import { EXPENSE_CATEGORIES } from "@/types/expense";
 import AddExpenseForm from "./AddExpenseForm";
 import ExpenseTable from "./ExpenseTable";
 import WheelPagination from "@/components/ui/wheel-pagination";
@@ -65,9 +66,89 @@ export default function ExpensesPageClient({
     });
   };
 
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const v = e.target.value as "" | ExpenseCategory;
+    startTransition(() => {
+      router.push(
+        buildExpensesUrl({
+          page: 1,
+          category: v || undefined,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+        })
+      );
+    });
+  };
+
+  const handleDateFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.trim();
+    startTransition(() => {
+      router.push(
+        buildExpensesUrl({
+          page: 1,
+          category: categoryFilter || undefined,
+          dateFrom: v || undefined,
+          dateTo: dateTo || undefined,
+        })
+      );
+    });
+  };
+
+  const handleDateToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value.trim();
+    startTransition(() => {
+      router.push(
+        buildExpensesUrl({
+          page: 1,
+          category: categoryFilter || undefined,
+          dateFrom: dateFrom || undefined,
+          dateTo: v || undefined,
+        })
+      );
+    });
+  };
+
   return (
     <div className="mt-6 flex min-w-0 flex-col gap-6">
-      <div className="flex justify-end">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <label htmlFor="expense-filter-category" className="sr-only">
+            Filter by category
+          </label>
+          <select
+            id="expense-filter-category"
+            value={categoryFilter}
+            onChange={handleCategoryChange}
+            className="min-h-[44px] w-full rounded-md border border-input bg-background px-4 py-2 text-foreground sm:w-auto sm:min-w-[180px]"
+          >
+            <option value="">All categories</option>
+            {EXPENSE_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <label htmlFor="expense-filter-dateFrom" className="sr-only">
+            From date
+          </label>
+          <input
+            id="expense-filter-dateFrom"
+            type="date"
+            value={dateFrom}
+            onChange={handleDateFromChange}
+            className="min-h-[44px] w-full rounded-md border border-input bg-background px-4 py-2 text-foreground sm:w-auto"
+          />
+          <label htmlFor="expense-filter-dateTo" className="sr-only">
+            To date
+          </label>
+          <input
+            id="expense-filter-dateTo"
+            type="date"
+            value={dateTo}
+            onChange={handleDateToChange}
+            className="min-h-[44px] w-full rounded-md border border-input bg-background px-4 py-2 text-foreground sm:w-auto"
+          />
+        </div>
         <button
           type="button"
           onClick={() => setAddModalOpen(true)}
