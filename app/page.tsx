@@ -1,9 +1,8 @@
+import { connection } from "next/server";
 import AppShell from "@/components/AppShell";
 import { getTotalMonthlyEarnings } from "@/lib/earning";
 import { getTotalMonthlyExpenses } from "@/lib/expense";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
-
-export const dynamic = "force-dynamic";
 
 function formatGMD(cents: number): string {
   return new Intl.NumberFormat("en-GM", {
@@ -13,6 +12,7 @@ function formatGMD(cents: number): string {
 }
 
 export default async function Home() {
+  await connection();
   const [totalEarnings, totalExpenses] = await Promise.all([
     getTotalMonthlyEarnings(),
     getTotalMonthlyExpenses(),
