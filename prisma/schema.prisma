@@ -30,3 +30,14 @@ model Expense {
   paymentMethod  String?  // Mobile Money | Cash | Bank Transfer | Card | Other
   createdAt      DateTime @default(now())
 }
+
+model Earning {
+  id             String   @id @default(cuid())
+  amountCents    Int
+  date           DateTime
+  note           String?
+  category       String?  // Salaries | Side Project | Friends & Family | Other
+  fromWhom       String?  // who you received money from
+  paymentMethod  String?  // same as Expense
+  createdAt      DateTime @default(now())
+}
