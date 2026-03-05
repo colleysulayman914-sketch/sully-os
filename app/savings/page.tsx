@@ -9,8 +9,14 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function SavingsPage() {
+export default async function SavingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ openAdd?: string }>;
+}) {
   await connection();
+  const params = await searchParams;
+  const openAdd = params.openAdd === "1";
   const summary = await getSavingsSummary();
 
   return (
@@ -23,7 +29,7 @@ export default async function SavingsPage() {
           <p className="mt-2 text-foreground/70">
             Track savings by category. Add deposits and set optional goals.
           </p>
-          <SavingsPageClient initialSummary={summary} />
+          <SavingsPageClient initialSummary={summary} openAdd={openAdd} />
         </div>
       </main>
     </AppShell>

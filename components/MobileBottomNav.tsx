@@ -11,6 +11,7 @@ import {
   ListTodo,
   CircleDollarSign,
   ListChecks,
+  PiggyBank,
 } from "lucide-react";
 
 async function fetchPendingTodoCount(): Promise<number> {
@@ -34,6 +35,7 @@ const navItems: { href: string; label: string; icon: React.ReactNode }[] = [
 const addMenuItems: { href: string; label: string; icon: React.ReactNode }[] = [
   { href: "/expenses?openAdd=1", label: "Add expense", icon: <CircleDollarSign className="size-4 shrink-0" aria-hidden /> },
   { href: "/earnings?openAdd=1", label: "Add earning", icon: <ArrowUpCircle className="size-4 shrink-0" aria-hidden /> },
+  { href: "/savings?openAdd=1", label: "Add deposit", icon: <PiggyBank className="size-4 shrink-0" aria-hidden /> },
   { href: "/todo?openAdd=1", label: "Add todo", icon: <ListChecks className="size-4 shrink-0" aria-hidden /> },
 ];
 

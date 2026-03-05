@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   CirclePlus,
@@ -21,6 +21,7 @@ import {
 
 type SavingsPageClientProps = {
   initialSummary: SavingsSummary;
+  openAdd?: boolean;
 };
 
 function formatGMD(cents: number): string {
@@ -32,10 +33,11 @@ function formatGMD(cents: number): string {
 
 export default function SavingsPageClient({
   initialSummary,
+  openAdd = false,
 }: SavingsPageClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(openAdd);
   const [goalModal, setGoalModal] = useState<{
     category: string;
     goalCents: number | null;
@@ -56,6 +58,12 @@ export default function SavingsPageClient({
     setAddCategoryOpen(false);
     startTransition(() => router.refresh());
   };
+
+  useEffect(() => {
+    if (openAdd) {
+      router.replace("/savings", { scroll: false });
+    }
+  }, [openAdd, router]);
 
   const categoryNames = initialSummary.categories.map((c) => c.category);
 
