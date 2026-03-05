@@ -3,6 +3,8 @@ import { getTotalMonthlyEarnings } from "@/lib/earning";
 import { getTotalMonthlyExpenses } from "@/lib/expense";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 function formatGMD(cents: number): string {
   return new Intl.NumberFormat("en-GM", {
     style: "currency",
