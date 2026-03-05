@@ -85,3 +85,26 @@ export async function getExpenses(
     limit,
   };
 }
+
+/** Start of month (00:00:00) and end of month (23:59:59.999) in local time for given year/month. */
+function getMonthRange(year: number, month: number) {
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 0, 23, 59, 59, 999);
+  return { start, end };
+}
+
+/** Total expenses in cents for a given month (defaults to current month). */
+export async function getTotalMonthlyExpenses(
+  year?: number,
+  month?: number
+): Promise<number> {
+  const now = new Date();
+  const y = year ?? now.getFullYear();
+  const m = month ?? now.getMonth() + 1;
+  const { start, end } = getMonthRange(y, m);
+  const result = await prisma.expense.aggregate({
+    where: { date: { gte: start, lte: end } },
+    _sum: { amountCents: true },
+  });
+  return result._sum.amountCents ?? 0;
+}
