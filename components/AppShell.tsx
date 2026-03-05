@@ -39,7 +39,7 @@ export default function AppShell({ children }: AppShellProps) {
         onClose={() => setSidebarOpen(false)}
       />
       <div className="relative min-h-screen w-full pb-20 sm:pb-0 sm:pl-80">
-        <AppHeader onMenuClick={() => setSidebarOpen(true)} />
+        <AppHeader onMenuClick={undefined} />
         {children}
       </div>
       <MobileBottomNav />

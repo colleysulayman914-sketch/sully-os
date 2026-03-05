@@ -13,6 +13,17 @@ import {
   ListChecks,
 } from "lucide-react";
 
+async function fetchPendingTodoCount(): Promise<number> {
+  try {
+    const res = await fetch("/api/todo?status=pending&limit=1");
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return typeof data.total === "number" ? data.total : 0;
+  } catch {
+    return 0;
+  }
+}
+
 const navItems: { href: string; label: string; icon: React.ReactNode }[] = [
   { href: "/", label: "Overview", icon: <Home className="size-5 shrink-0" aria-hidden /> },
   { href: "/expenses", label: "Expenses", icon: <ArrowDownCircle className="size-5 shrink-0" aria-hidden /> },
@@ -30,6 +41,7 @@ export default function MobileBottomNav() {
   const pathname = usePathname();
   const basePath = "/" + (pathname?.split("/").filter(Boolean)[0] ?? "");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState<number>(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +54,16 @@ export default function MobileBottomNav() {
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, [addMenuOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchPendingTodoCount().then((n) => {
+      if (!cancelled) setPendingCount(n);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   return (
     <nav
@@ -109,10 +131,19 @@ export default function MobileBottomNav() {
 
       <Link
         href="/todo"
-        className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-lg text-foreground/70 hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 aria-[current]:text-foreground"
+        className="relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-0.5 rounded-lg text-foreground/70 hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 aria-[current]:text-foreground"
         aria-current={basePath === "/todo" ? "page" : undefined}
+        aria-label={pendingCount > 0 ? `Todo, ${pendingCount} pending` : "Todo"}
       >
         {navItems[3].icon}
+        {pendingCount > 0 && (
+          <span
+            className="absolute right-0 top-0 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground"
+            aria-hidden
+          >
+            {pendingCount > 99 ? "99+" : pendingCount}
+          </span>
+        )}
         <span className="text-[10px] font-medium">{navItems[3].label}</span>
       </Link>
     </nav>
