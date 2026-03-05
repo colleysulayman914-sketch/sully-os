@@ -18,6 +18,10 @@ const badgeVariants = cva(
         archived: "bg-muted text-muted-foreground border border-border",
         pending: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
         cancel: "bg-muted text-muted-foreground border border-border",
+        priorityLow: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border border-slate-500/20",
+        priorityMedium: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20",
+        priorityHigh: "bg-destructive/10 text-destructive border border-destructive/20",
+        repeat: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20",
       },
     },
     defaultVariants: {

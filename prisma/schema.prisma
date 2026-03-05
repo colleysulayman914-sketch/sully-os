@@ -19,3 +19,12 @@ model Todo {
   repeatUnit     String?   // day | week | month, used when repeatRule === "custom"
   createdAt      DateTime  @default(now())
 }
+
+model Expense {
+  id       String    @id @default(cuid())
+  amountCents Int    // amount in cents (e.g. 1999 = $19.99)
+  date     DateTime
+  note     String?
+  category String?   // Food | Transport | Bills | Shopping | Health | Giveaways | Parent Allowances | School Transportation | Other
+  createdAt DateTime @default(now())
+}
