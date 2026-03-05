@@ -13,7 +13,7 @@ function parseQuery(request: Request) {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.min(
     100,
-    Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10) || 10)
+    Math.max(1, parseInt(searchParams.get("limit") ?? "3", 10) || 3)
   );
   const category = searchParams.get("category") ?? "";
   const categoryFilter = EXPENSE_CATEGORIES.includes(category as ExpenseCategory)

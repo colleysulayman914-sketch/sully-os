@@ -8,7 +8,7 @@ export const metadata = {
   title: "Expenses",
 };
 
-const LIMIT = 10;
+const LIMIT = 3;
 
 export default async function ExpensesPage({
   searchParams,

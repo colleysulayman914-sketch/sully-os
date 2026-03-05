@@ -2,7 +2,8 @@ import { connection } from "next/server";
 import AppShell from "@/components/AppShell";
 import { getTotalMonthlyEarnings } from "@/lib/earning";
 import { getTotalMonthlyExpenses } from "@/lib/expense";
-import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { getSavingsSummary } from "@/lib/savings";
+import { ArrowDownCircle, ArrowUpCircle, PiggyBank } from "lucide-react";
 
 function formatGMD(cents: number): string {
   return new Intl.NumberFormat("en-GM", {
@@ -13,9 +14,10 @@ function formatGMD(cents: number): string {
 
 export default async function Home() {
   await connection();
-  const [totalEarnings, totalExpenses] = await Promise.all([
+  const [totalEarnings, totalExpenses, savingsSummary] = await Promise.all([
     getTotalMonthlyEarnings(),
     getTotalMonthlyExpenses(),
+    getSavingsSummary(),
   ]);
 
   const monthLabel = new Date().toLocaleDateString("en-US", {
@@ -59,6 +61,42 @@ export default async function Home() {
               <p className="text-xs text-muted-foreground">{monthLabel}</p>
             </div>
           </section>
+
+          {savingsSummary.categories.length > 0 && (
+            <section
+              className="mt-6 min-w-0"
+              aria-label="Savings by category"
+            >
+              <div className="flex min-w-0 flex-col gap-4 rounded-lg border border-border bg-background p-4 shadow-sm sm:p-5">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <PiggyBank className="size-5 shrink-0" aria-hidden />
+                  <span className="text-sm font-medium">Savings</span>
+                </div>
+                <ul className="flex flex-col gap-3 min-w-0">
+                  {savingsSummary.categories.map((cat) => (
+                    <li
+                      key={cat.category}
+                      className="flex min-w-0 flex-wrap items-baseline justify-between gap-2 border-b border-border pb-3 last:border-0 last:pb-0"
+                    >
+                      <span className="text-sm font-medium text-foreground truncate">
+                        {cat.category}
+                      </span>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="text-base font-semibold text-foreground tabular-nums">
+                          {formatGMD(cat.totalCents)}
+                        </span>
+                        {cat.goalCents != null && (
+                          <span className="text-xs text-muted-foreground">
+                            Goal: {formatGMD(cat.goalCents)}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          )}
         </div>
       </main>
     </AppShell>

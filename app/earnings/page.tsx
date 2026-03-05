@@ -8,7 +8,7 @@ export const metadata = {
   title: "Earnings",
 };
 
-const LIMIT = 10;
+const LIMIT = 3;
 
 export default async function EarningsPage({
   searchParams,

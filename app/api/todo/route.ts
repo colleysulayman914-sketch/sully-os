@@ -23,7 +23,7 @@ function mapRepeat(
 function parseQuery(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "10", 10) || 10));
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "3", 10) || 3));
   const search = (searchParams.get("search") ?? "").trim();
   const status = searchParams.get("status") ?? "";
   const statusFilter = STATUSES.includes(status as TodoStatus) ? (status as TodoStatus) : undefined;
