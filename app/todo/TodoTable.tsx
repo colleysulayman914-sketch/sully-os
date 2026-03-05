@@ -66,6 +66,20 @@ function formatDateTime(d: Date) {
   });
 }
 
+function formatRepeatLabel(todo: Todo): string {
+  const rule = todo.repeatRule;
+  if (!rule || rule === "none") return "—";
+  if (rule === "daily") return "Daily";
+  if (rule === "weekly") return "Weekly";
+  if (rule === "monthly") return "Monthly";
+  if (rule === "yearly") return "Yearly";
+  if (rule === "custom" && todo.repeatInterval != null && todo.repeatUnit) {
+    const unit = todo.repeatUnit === "day" ? "days" : todo.repeatUnit === "week" ? "weeks" : "months";
+    return `Every ${todo.repeatInterval} ${unit}`;
+  }
+  return "—";
+}
+
 export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -105,6 +119,7 @@ export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
             <Column isRowHeader>Title</Column>
             <Column>Status</Column>
             <Column>Priority</Column>
+            <Column>Repeat</Column>
             <Column>Due</Column>
             <Column>Created</Column>
             <Column width={56}>Actions</Column>
@@ -112,7 +127,7 @@ export default function TodoTable({ todos, onUpdated }: TodoTableProps) {
           <TableBody>
             {todos.length === 0 ? (
               <Row>
-                <Cell colSpan={7} className="h-24 text-center text-muted-foreground">
+                <Cell colSpan={8} className="h-24 text-center text-muted-foreground">
                   No tasks yet. Add one above.
                 </Cell>
               </Row>
@@ -433,6 +448,9 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
         {todo.priority ?? "—"}
       </Cell>
       <Cell className="text-muted-foreground">
+        {formatRepeatLabel(todo)}
+      </Cell>
+      <Cell className="text-muted-foreground">
         {todo.dueDate ? formatDateTime(todo.dueDate) : "—"}
       </Cell>
       <Cell className="text-muted-foreground">{formatDate(todo.createdAt)}</Cell>
@@ -474,6 +492,11 @@ function TodoCard({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
             {todo.priority && (
               <span className="text-xs capitalize text-muted-foreground">
                 {todo.priority}
+              </span>
+            )}
+            {formatRepeatLabel(todo) !== "—" && (
+              <span className="text-xs text-muted-foreground">
+                {formatRepeatLabel(todo)}
               </span>
             )}
             <span className="text-xs text-muted-foreground">

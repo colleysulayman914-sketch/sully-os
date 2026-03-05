@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import type { Todo, TodoListResponse, TodoPriority, TodoStatus } from "@/types/todo";
+import type { Todo, TodoListResponse, TodoPriority, TodoRepeatRule, TodoRepeatUnit, TodoStatus } from "@/types/todo";
 
 const STATUSES: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
 const PRIORITIES: TodoPriority[] = ["low", "medium", "high"];
+const REPEAT_RULES: TodoRepeatRule[] = ["none", "daily", "weekly", "monthly", "yearly", "custom"];
+const REPEAT_UNITS: TodoRepeatUnit[] = ["day", "week", "month"];
+
+function mapRepeat(
+  t: { repeatRule?: string | null; repeatInterval?: number | null; repeatUnit?: string | null }
+): { repeatRule: TodoRepeatRule | null; repeatInterval: number | null; repeatUnit: TodoRepeatUnit | null } {
+  const rule = t.repeatRule && REPEAT_RULES.includes(t.repeatRule as TodoRepeatRule) ? (t.repeatRule as TodoRepeatRule) : null;
+  const unit = t.repeatUnit && REPEAT_UNITS.includes(t.repeatUnit as TodoRepeatUnit) ? (t.repeatUnit as TodoRepeatUnit) : null;
+  const interval = rule === "custom" && typeof t.repeatInterval === "number" && t.repeatInterval >= 1 ? t.repeatInterval : null;
+  return {
+    repeatRule: rule,
+    repeatInterval: rule === "custom" ? interval : null,
+    repeatUnit: rule === "custom" ? unit : null,
+  };
+}
 
 function parseQuery(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -36,15 +51,19 @@ export async function GET(
       prisma.todo.count({ where }),
     ]);
 
-    const mapped = todos.map((t) => ({
-      id: t.id,
-      title: t.title,
-      completed: t.completed,
-      status: (t.status ?? "pending") as TodoStatus,
-      priority: t.priority && PRIORITIES.includes(t.priority as TodoPriority) ? (t.priority as TodoPriority) : null,
-      dueDate: t.dueDate,
-      createdAt: t.createdAt,
-    }));
+    const mapped = todos.map((t) => {
+      const repeat = mapRepeat(t);
+      return {
+        id: t.id,
+        title: t.title,
+        completed: t.completed,
+        status: (t.status ?? "pending") as TodoStatus,
+        priority: t.priority && PRIORITIES.includes(t.priority as TodoPriority) ? (t.priority as TodoPriority) : null,
+        dueDate: t.dueDate,
+        ...repeat,
+        createdAt: t.createdAt,
+      };
+    });
 
     const totalPages = Math.ceil(total / limit) || 1;
     const body: TodoListResponse = {
@@ -84,9 +103,33 @@ export async function POST(
       body?.dueDate != null && body.dueDate !== ""
         ? new Date(body.dueDate)
         : undefined;
+    const rawRule = body?.repeatRule;
+    const repeatRule =
+      rawRule != null && rawRule !== "" && REPEAT_RULES.includes(rawRule as TodoRepeatRule)
+        ? (rawRule as TodoRepeatRule)
+        : null;
+    let repeatInterval: number | null = null;
+    let repeatUnit: TodoRepeatUnit | null = null;
+    if (repeatRule === "custom") {
+      const interval = typeof body?.repeatInterval === "number" ? body.repeatInterval : parseInt(String(body?.repeatInterval), 10);
+      const unit = body?.repeatUnit;
+      if (!Number.isNaN(interval) && interval >= 1 && unit && REPEAT_UNITS.includes(unit as TodoRepeatUnit)) {
+        repeatInterval = interval;
+        repeatUnit = unit as TodoRepeatUnit;
+      }
+    }
     const todo = await prisma.todo.create({
-      data: { title, status, priority, dueDate: dueDate ?? null },
+      data: {
+        title,
+        status,
+        priority,
+        dueDate: dueDate ?? null,
+        repeatRule: repeatRule ?? null,
+        repeatInterval,
+        repeatUnit,
+      },
     });
+    const repeat = mapRepeat(todo);
     const mapped: Todo = {
       id: todo.id,
       title: todo.title,
@@ -94,6 +137,7 @@ export async function POST(
       status: (todo.status ?? "pending") as TodoStatus,
       priority: todo.priority && PRIORITIES.includes(todo.priority as TodoPriority) ? (todo.priority as TodoPriority) : null,
       dueDate: todo.dueDate,
+      ...repeat,
       createdAt: todo.createdAt,
     };
     return NextResponse.json(mapped);

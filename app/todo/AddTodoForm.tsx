@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import type { TodoPriority, TodoStatus } from "@/types/todo";
+import type { TodoPriority, TodoRepeatRule, TodoRepeatUnit, TodoStatus } from "@/types/todo";
 
 const STATUS_OPTIONS: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
 const PRIORITY_OPTIONS: TodoPriority[] = ["low", "medium", "high"];
+const REPEAT_OPTIONS: TodoRepeatRule[] = ["none", "daily", "weekly", "monthly", "yearly", "custom"];
+const REPEAT_UNIT_OPTIONS: TodoRepeatUnit[] = ["day", "week", "month"];
 
 type AddTodoFormProps = {
   onAdded: () => void;
@@ -16,6 +18,9 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
   const [status, setStatus] = useState<TodoStatus>("pending");
   const [priority, setPriority] = useState<TodoPriority | "">("");
   const [dueDateTime, setDueDateTime] = useState("");
+  const [repeatRule, setRepeatRule] = useState<TodoRepeatRule>("none");
+  const [repeatInterval, setRepeatInterval] = useState(1);
+  const [repeatUnit, setRepeatUnit] = useState<TodoRepeatUnit>("day");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,15 +31,21 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
     if (!trimmed) return;
     setLoading(true);
     try {
+      const payload: Record<string, unknown> = {
+        title: trimmed,
+        status,
+        priority: priority || null,
+        dueDate: dueDateTime || null,
+        repeatRule: repeatRule === "none" ? null : repeatRule,
+      };
+      if (repeatRule === "custom") {
+        payload.repeatInterval = Math.max(1, repeatInterval);
+        payload.repeatUnit = repeatUnit;
+      }
       const res = await fetch("/api/todo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: trimmed,
-          status,
-          priority: priority || null,
-          dueDate: dueDateTime || null,
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -47,6 +58,9 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
       setStatus("pending");
       setPriority("");
       setDueDateTime("");
+      setRepeatRule("none");
+      setRepeatInterval(1);
+      setRepeatUnit("day");
       toast.success("Task added");
       onAdded();
     } catch {
@@ -124,6 +138,60 @@ export default function AddTodoForm({ onAdded }: AddTodoFormProps) {
           className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
+      <div>
+        <label htmlFor="todo-repeat-add" className="mb-1 block text-sm font-medium text-foreground">
+          Repeat
+        </label>
+        <select
+          id="todo-repeat-add"
+          value={repeatRule}
+          onChange={(e) => setRepeatRule(e.target.value as TodoRepeatRule)}
+          disabled={loading}
+          className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
+        >
+          {REPEAT_OPTIONS.map((r) => (
+            <option key={r} value={r}>
+              {r === "none" ? "None" : r.charAt(0).toUpperCase() + r.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+      {repeatRule === "custom" && (
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label htmlFor="todo-repeat-interval-add" className="mb-1 block text-sm font-medium text-foreground">
+              Every
+            </label>
+            <input
+              id="todo-repeat-interval-add"
+              type="number"
+              min={1}
+              value={repeatInterval}
+              onChange={(e) => setRepeatInterval(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              disabled={loading}
+              className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="flex-1">
+            <label htmlFor="todo-repeat-unit-add" className="mb-1 block text-sm font-medium text-foreground">
+              Unit
+            </label>
+            <select
+              id="todo-repeat-unit-add"
+              value={repeatUnit}
+              onChange={(e) => setRepeatUnit(e.target.value as TodoRepeatUnit)}
+              disabled={loading}
+              className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
+            >
+              {REPEAT_UNIT_OPTIONS.map((u) => (
+                <option key={u} value={u}>
+                  {u === "day" ? "Days" : u === "week" ? "Weeks" : "Months"}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
       <div className="flex gap-2">
         <button
           type="submit"

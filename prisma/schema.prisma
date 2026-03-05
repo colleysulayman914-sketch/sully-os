@@ -8,11 +8,14 @@ datasource db {
 }
 
 model Todo {
-  id        String    @id @default(cuid())
-  title     String
-  completed Boolean   @default(false)
-  status    String    @default("pending") // pending | cancel | completed | archived
-  priority  String?   // low | medium | high
-  dueDate   DateTime?
-  createdAt DateTime  @default(now())
+  id             String    @id @default(cuid())
+  title          String
+  completed      Boolean   @default(false)
+  status         String    @default("pending") // pending | cancel | completed | archived
+  priority       String?   // low | medium | high
+  dueDate        DateTime?
+  repeatRule     String?   // none | daily | weekly | monthly | yearly | custom
+  repeatInterval Int?      // used when repeatRule === "custom"
+  repeatUnit     String?   // day | week | month, used when repeatRule === "custom"
+  createdAt      DateTime  @default(now())
 }

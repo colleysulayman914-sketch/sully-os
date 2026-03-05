@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import type { Todo, TodoPriority, TodoStatus } from "@/types/todo";
+import type { Todo, TodoPriority, TodoRepeatRule, TodoRepeatUnit, TodoStatus } from "@/types/todo";
 
 const PRIORITIES: TodoPriority[] = ["low", "medium", "high"];
+const REPEAT_RULES: TodoRepeatRule[] = ["none", "daily", "weekly", "monthly", "yearly", "custom"];
+const REPEAT_UNITS: TodoRepeatUnit[] = ["day", "week", "month"];
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-/** Prisma Todo may omit optional fields in generated types; use this when reading dueDate/priority */
+function mapRepeat(
+  row: { repeatRule?: string | null; repeatInterval?: number | null; repeatUnit?: string | null }
+): { repeatRule: TodoRepeatRule | null; repeatInterval: number | null; repeatUnit: TodoRepeatUnit | null } {
+  const rule = row.repeatRule && REPEAT_RULES.includes(row.repeatRule as TodoRepeatRule) ? (row.repeatRule as TodoRepeatRule) : null;
+  const unit = row.repeatUnit && REPEAT_UNITS.includes(row.repeatUnit as TodoRepeatUnit) ? (row.repeatUnit as TodoRepeatUnit) : null;
+  const interval = rule === "custom" && typeof row.repeatInterval === "number" && row.repeatInterval >= 1 ? row.repeatInterval : null;
+  return {
+    repeatRule: rule,
+    repeatInterval: rule === "custom" ? interval : null,
+    repeatUnit: rule === "custom" ? unit : null,
+  };
+}
+
+/** Prisma Todo may omit optional fields in generated types; use this when reading dueDate/priority/repeat */
 function toTodo(
   row: {
     id: string;
@@ -16,8 +31,12 @@ function toTodo(
     createdAt: Date;
     dueDate?: Date | null;
     priority?: string | null;
+    repeatRule?: string | null;
+    repeatInterval?: number | null;
+    repeatUnit?: string | null;
   }
 ): Todo {
+  const repeat = mapRepeat(row);
   return {
     id: row.id,
     title: row.title,
@@ -25,6 +44,7 @@ function toTodo(
     status: (row.status ?? "pending") as TodoStatus,
     priority: row.priority && PRIORITIES.includes(row.priority as TodoPriority) ? (row.priority as TodoPriority) : null,
     dueDate: row.dueDate ?? null,
+    ...repeat,
     createdAt: row.createdAt,
   };
 }
@@ -80,12 +100,50 @@ export async function PATCH(
           : typeof body.priority === "string" && PRIORITIES.includes(body.priority as TodoPriority)
             ? body.priority
             : undefined;
-    const data: { title?: string; completed?: boolean; status?: string; priority?: string | null; dueDate?: Date | null } = {};
+    const rawRule = body?.repeatRule;
+    const repeatRule =
+      rawRule !== undefined
+        ? rawRule === null || rawRule === ""
+          ? null
+          : typeof rawRule === "string" && REPEAT_RULES.includes(rawRule as TodoRepeatRule)
+            ? rawRule
+            : undefined;
+    let repeatInterval: number | null | undefined = undefined;
+    let repeatUnit: TodoRepeatUnit | null | undefined = undefined;
+    if (repeatRule !== undefined) {
+      if (repeatRule === "custom") {
+        const interval = typeof body?.repeatInterval === "number" ? body.repeatInterval : parseInt(String(body?.repeatInterval), 10);
+        const unit = body?.repeatUnit;
+        if (!Number.isNaN(interval) && interval >= 1 && unit && REPEAT_UNITS.includes(unit as TodoRepeatUnit)) {
+          repeatInterval = interval;
+          repeatUnit = unit as TodoRepeatUnit;
+        } else {
+          repeatInterval = null;
+          repeatUnit = null;
+        }
+      } else {
+        repeatInterval = null;
+        repeatUnit = null;
+      }
+    }
+    const data: {
+      title?: string;
+      completed?: boolean;
+      status?: string;
+      priority?: string | null;
+      dueDate?: Date | null;
+      repeatRule?: string | null;
+      repeatInterval?: number | null;
+      repeatUnit?: string | null;
+    } = {};
     if (title !== undefined) data.title = title;
     if (completed !== undefined) data.completed = completed;
     if (status !== undefined) data.status = status;
     if (priority !== undefined) data.priority = priority;
     if (dueDate !== undefined) data.dueDate = dueDate;
+    if (repeatRule !== undefined) data.repeatRule = repeatRule;
+    if (repeatInterval !== undefined) data.repeatInterval = repeatInterval;
+    if (repeatUnit !== undefined) data.repeatUnit = repeatUnit;
     if (Object.keys(data).length === 0) {
       const existing = await prisma.todo.findUnique({ where: { id } });
       if (!existing) {

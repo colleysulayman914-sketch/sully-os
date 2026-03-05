@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/db";
-import type { Todo, TodoListParams, TodoListResponse, TodoPriority, TodoStatus } from "@/types/todo";
+import type { Todo, TodoListParams, TodoListResponse, TodoPriority, TodoRepeatRule, TodoRepeatUnit, TodoStatus } from "@/types/todo";
 
 const STATUSES: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
 const PRIORITIES: TodoPriority[] = ["low", "medium", "high"];
+const REPEAT_RULES: TodoRepeatRule[] = ["none", "daily", "weekly", "monthly", "yearly", "custom"];
+const REPEAT_UNITS: TodoRepeatUnit[] = ["day", "week", "month"];
 
 export async function getTodos(params: TodoListParams = {}): Promise<TodoListResponse> {
   const page = Math.max(1, params.page ?? 1);
@@ -24,15 +26,23 @@ export async function getTodos(params: TodoListParams = {}): Promise<TodoListRes
     prisma.todo.count({ where }),
   ]);
 
-  const todos: Todo[] = rows.map((t) => ({
-    id: t.id,
-    title: t.title,
-    completed: t.completed,
-    status: (t.status ?? "pending") as TodoStatus,
-    priority: t.priority && PRIORITIES.includes(t.priority as TodoPriority) ? (t.priority as TodoPriority) : null,
-    dueDate: t.dueDate,
-    createdAt: t.createdAt,
-  }));
+  const todos: Todo[] = rows.map((t) => {
+    const rule = t.repeatRule && REPEAT_RULES.includes(t.repeatRule as TodoRepeatRule) ? (t.repeatRule as TodoRepeatRule) : null;
+    const unit = t.repeatUnit && REPEAT_UNITS.includes(t.repeatUnit as TodoRepeatUnit) ? (t.repeatUnit as TodoRepeatUnit) : null;
+    const interval = rule === "custom" && typeof t.repeatInterval === "number" && t.repeatInterval >= 1 ? t.repeatInterval : null;
+    return {
+      id: t.id,
+      title: t.title,
+      completed: t.completed,
+      status: (t.status ?? "pending") as TodoStatus,
+      priority: t.priority && PRIORITIES.includes(t.priority as TodoPriority) ? (t.priority as TodoPriority) : null,
+      dueDate: t.dueDate,
+      repeatRule: rule,
+      repeatInterval: rule === "custom" ? interval : null,
+      repeatUnit: rule === "custom" ? unit : null,
+      createdAt: t.createdAt,
+    };
+  });
 
   return {
     todos,

@@ -4,6 +4,12 @@ export type TodoStatus = (typeof TODO_STATUSES)[number];
 export const TODO_PRIORITIES = ["low", "medium", "high"] as const;
 export type TodoPriority = (typeof TODO_PRIORITIES)[number];
 
+export const TODO_REPEAT_RULES = ["none", "daily", "weekly", "monthly", "yearly", "custom"] as const;
+export type TodoRepeatRule = (typeof TODO_REPEAT_RULES)[number];
+
+export const TODO_REPEAT_UNITS = ["day", "week", "month"] as const;
+export type TodoRepeatUnit = (typeof TODO_REPEAT_UNITS)[number];
+
 /** Display-only status: "overdue" when due date is past and task not completed/archived */
 export type DisplayStatus = TodoStatus | "overdue";
 
@@ -26,6 +32,9 @@ export type Todo = {
   status: TodoStatus;
   priority: TodoPriority | null;
   dueDate: Date | null;
+  repeatRule: TodoRepeatRule | null;
+  repeatInterval: number | null;
+  repeatUnit: TodoRepeatUnit | null;
   createdAt: Date;
 };
 
@@ -34,6 +43,9 @@ export type CreateTodoInput = {
   status?: TodoStatus;
   priority?: TodoPriority | null;
   dueDate?: string | null; // ISO date string or datetime-local YYYY-MM-DDTHH:mm
+  repeatRule?: TodoRepeatRule | null;
+  repeatInterval?: number | null;
+  repeatUnit?: TodoRepeatUnit | null;
 };
 
 export type UpdateTodoInput = {
@@ -42,6 +54,9 @@ export type UpdateTodoInput = {
   status?: TodoStatus;
   priority?: TodoPriority | null;
   dueDate?: string | null;
+  repeatRule?: TodoRepeatRule | null;
+  repeatInterval?: number | null;
+  repeatUnit?: TodoRepeatUnit | null;
 };
 
 export type TodoListParams = {

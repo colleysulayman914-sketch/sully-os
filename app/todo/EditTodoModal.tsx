@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import type { Todo, TodoPriority, TodoStatus } from "@/types/todo";
+import type { Todo, TodoPriority, TodoRepeatRule, TodoRepeatUnit, TodoStatus } from "@/types/todo";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,8 @@ import {
 
 const STATUS_OPTIONS: TodoStatus[] = ["pending", "cancel", "completed", "archived"];
 const PRIORITY_OPTIONS: TodoPriority[] = ["low", "medium", "high"];
+const REPEAT_OPTIONS: TodoRepeatRule[] = ["none", "daily", "weekly", "monthly", "yearly", "custom"];
+const REPEAT_UNIT_OPTIONS: TodoRepeatUnit[] = ["day", "week", "month"];
 
 type EditTodoModalProps = {
   todo: Todo;
@@ -31,6 +33,9 @@ export default function EditTodoModal({ todo, onClose, onSaved }: EditTodoModalP
   const [status, setStatus] = useState<TodoStatus>(todo.status);
   const [priority, setPriority] = useState<TodoPriority | "">(todo.priority ?? "");
   const [dueDateTime, setDueDateTime] = useState(toDateTimeLocalValue(todo.dueDate));
+  const [repeatRule, setRepeatRule] = useState<TodoRepeatRule>(todo.repeatRule ?? "none");
+  const [repeatInterval, setRepeatInterval] = useState(todo.repeatInterval ?? 1);
+  const [repeatUnit, setRepeatUnit] = useState<TodoRepeatUnit>(todo.repeatUnit ?? "day");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +44,9 @@ export default function EditTodoModal({ todo, onClose, onSaved }: EditTodoModalP
     setStatus(todo.status);
     setPriority(todo.priority ?? "");
     setDueDateTime(toDateTimeLocalValue(todo.dueDate));
+    setRepeatRule(todo.repeatRule ?? "none");
+    setRepeatInterval(todo.repeatInterval ?? 1);
+    setRepeatUnit(todo.repeatUnit ?? "day");
   }, [todo]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -48,15 +56,24 @@ export default function EditTodoModal({ todo, onClose, onSaved }: EditTodoModalP
     if (!trimmed) return;
     setLoading(true);
     try {
+      const payload: Record<string, unknown> = {
+        title: trimmed,
+        status,
+        priority: priority || null,
+        dueDate: dueDateTime || null,
+        repeatRule: repeatRule === "none" ? null : repeatRule,
+      };
+      if (repeatRule === "custom") {
+        payload.repeatInterval = Math.max(1, repeatInterval);
+        payload.repeatUnit = repeatUnit;
+      } else {
+        payload.repeatInterval = null;
+        payload.repeatUnit = null;
+      }
       const res = await fetch(`/api/todo/${todo.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: trimmed,
-          status,
-          priority: priority || null,
-          dueDate: dueDateTime || null,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -147,6 +164,60 @@ export default function EditTodoModal({ todo, onClose, onSaved }: EditTodoModalP
               className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+          <div>
+            <label htmlFor="edit-todo-repeat" className="mb-1 block text-sm font-medium text-foreground">
+              Repeat
+            </label>
+            <select
+              id="edit-todo-repeat"
+              value={repeatRule}
+              onChange={(e) => setRepeatRule(e.target.value as TodoRepeatRule)}
+              disabled={loading}
+              className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
+            >
+              {REPEAT_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r === "none" ? "None" : r.charAt(0).toUpperCase() + r.slice(1)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {repeatRule === "custom" && (
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label htmlFor="edit-todo-repeat-interval" className="mb-1 block text-sm font-medium text-foreground">
+                  Every
+                </label>
+                <input
+                  id="edit-todo-repeat-interval"
+                  type="number"
+                  min={1}
+                  value={repeatInterval}
+                  onChange={(e) => setRepeatInterval(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  disabled={loading}
+                  className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div className="flex-1">
+                <label htmlFor="edit-todo-repeat-unit" className="mb-1 block text-sm font-medium text-foreground">
+                  Unit
+                </label>
+                <select
+                  id="edit-todo-repeat-unit"
+                  value={repeatUnit}
+                  onChange={(e) => setRepeatUnit(e.target.value as TodoRepeatUnit)}
+                  disabled={loading}
+                  className="min-h-[44px] w-full rounded-lg border border-input bg-background px-4 py-3 text-foreground"
+                >
+                  {REPEAT_UNIT_OPTIONS.map((u) => (
+                    <option key={u} value={u}>
+                      {u === "day" ? "Days" : u === "week" ? "Weeks" : "Months"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
