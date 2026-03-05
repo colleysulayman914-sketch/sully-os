@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import AppShell from "@/components/AppShell";
 import { getTotalMonthlyEarnings } from "@/lib/earning";
 import { getTotalMonthlyExpenses } from "@/lib/expense";
-import { getSavingsSummary } from "@/lib/savings";
+import { getSavingsSummary, getTotalMonthlySavings } from "@/lib/savings";
 import { ArrowDownCircle, ArrowUpCircle, PiggyBank } from "lucide-react";
 
 function formatGMD(cents: number): string {
@@ -14,18 +14,22 @@ function formatGMD(cents: number): string {
 
 export default async function Home() {
   await connection();
-  const [totalEarnings, totalExpenses, savingsSummary] = await Promise.all([
-    getTotalMonthlyEarnings(),
-    getTotalMonthlyExpenses(),
-    getSavingsSummary(),
-  ]);
+  const [totalEarnings, totalExpenses, totalSavingsThisMonth, savingsSummary] =
+    await Promise.all([
+      getTotalMonthlyEarnings(),
+      getTotalMonthlyExpenses(),
+      getTotalMonthlySavings(),
+      getSavingsSummary(),
+    ]);
 
   const monthLabel = new Date().toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   });
 
-  const netCents = totalEarnings - totalExpenses;
+  /** Total outgoing = expenses + savings done this month (savings count as outgoings). */
+  const totalOutgoing = totalExpenses + totalSavingsThisMonth;
+  const netCents = totalEarnings - totalOutgoing;
 
   return (
     <AppShell>
@@ -70,9 +74,12 @@ export default async function Home() {
                 <span className="text-sm font-medium">Expenses</span>
               </div>
               <p className="text-lg font-semibold text-foreground tabular-nums sm:text-xl">
-                {formatGMD(totalExpenses)}
+                {formatGMD(totalOutgoing)}
               </p>
-              <p className="text-xs text-muted-foreground">{monthLabel}</p>
+              <p className="text-xs text-muted-foreground">
+                {monthLabel}
+                {totalSavingsThisMonth > 0 && " (incl. savings)"}
+              </p>
             </div>
           </section>
 

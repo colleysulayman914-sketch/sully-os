@@ -38,6 +38,23 @@ export async function getSavingsSummary(): Promise<SavingsSummary> {
   return { categories };
 }
 
+/** Total savings (deposits) in cents for a given month (defaults to current month). */
+export async function getTotalMonthlySavings(
+  year?: number,
+  month?: number
+): Promise<number> {
+  const now = new Date();
+  const y = year ?? now.getFullYear();
+  const m = month ?? now.getMonth() + 1;
+  const start = new Date(y, m - 1, 1);
+  const end = new Date(y, m, 0, 23, 59, 59, 999);
+  const result = await prisma.savingsDeposit.aggregate({
+    where: { date: { gte: start, lte: end } },
+    _sum: { amountCents: true },
+  });
+  return result._sum.amountCents ?? 0;
+}
+
 export async function getSavingsCategoryNames(): Promise<string[]> {
   await ensureDefaultSavingsCategories();
   const rows = await prisma.savingsCategory.findMany({
