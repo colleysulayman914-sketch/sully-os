@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import type { Todo, TodoStatus } from "@/types/todo";
+import type { Todo, TodoPriority, TodoStatus } from "@/types/todo";
 import type { DisplayStatus } from "@/types/todo";
 import { getDisplayStatus } from "@/types/todo";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +39,27 @@ function StatusTag({ displayStatus }: { displayStatus: DisplayStatus }) {
   return (
     <Badge variant={variant} className="capitalize">
       {displayStatus}
+    </Badge>
+  );
+}
+
+function PriorityTag({ priority }: { priority: TodoPriority | null }) {
+  if (!priority) return <span className="text-muted-foreground">—</span>;
+  const variant =
+    priority === "high" ? "priorityHigh" : priority === "medium" ? "priorityMedium" : "priorityLow";
+  return (
+    <Badge variant={variant} className="capitalize">
+      {priority}
+    </Badge>
+  );
+}
+
+function RepeatTag({ todo }: { todo: Todo }) {
+  const label = formatRepeatLabel(todo);
+  if (label === "—") return <span className="text-muted-foreground">—</span>;
+  return (
+    <Badge variant="repeat">
+      {label}
     </Badge>
   );
 }
@@ -444,11 +465,11 @@ function TodoRow({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
       <Cell>
         <StatusTag displayStatus={getDisplayStatus(todo)} />
       </Cell>
-      <Cell className="capitalize text-muted-foreground">
-        {todo.priority ?? "—"}
+      <Cell>
+        <PriorityTag priority={todo.priority} />
       </Cell>
-      <Cell className="text-muted-foreground">
-        {formatRepeatLabel(todo)}
+      <Cell>
+        <RepeatTag todo={todo} />
       </Cell>
       <Cell className="text-muted-foreground">
         {todo.dueDate ? formatDateTime(todo.dueDate) : "—"}
@@ -489,16 +510,8 @@ function TodoCard({ todo, onUpdated }: { todo: Todo; onUpdated: () => void }) {
           </h3>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <StatusTag displayStatus={getDisplayStatus(todo)} />
-            {todo.priority && (
-              <span className="text-xs capitalize text-muted-foreground">
-                {todo.priority}
-              </span>
-            )}
-            {formatRepeatLabel(todo) !== "—" && (
-              <span className="text-xs text-muted-foreground">
-                {formatRepeatLabel(todo)}
-              </span>
-            )}
+            <PriorityTag priority={todo.priority} />
+            <RepeatTag todo={todo} />
             <span className="text-xs text-muted-foreground">
               Due: {todo.dueDate ? formatDateTime(todo.dueDate) : "—"}
             </span>
