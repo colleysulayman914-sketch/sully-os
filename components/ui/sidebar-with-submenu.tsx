@@ -6,8 +6,8 @@ import Image from "next/image";
 import {
   ChevronDown,
   LayoutDashboard,
-  Receipt,
-  Tags,
+  ArrowDownCircle,
+  ArrowUpCircle,
   ListTodo,
   Wallet,
   Calendar,
@@ -82,14 +82,14 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
       icon: <LayoutDashboard className="w-5 h-5" />,
     },
     {
-      href: "/transactions",
-      name: "Transactions",
-      icon: <Receipt className="w-5 h-5" />,
+      href: "/expenses",
+      name: "Expenses",
+      icon: <ArrowDownCircle className="w-5 h-5" />,
     },
     {
-      href: "/categories",
-      name: "Categories",
-      icon: <Tags className="w-5 h-5" />,
+      href: "/earnings",
+      name: "Earnings",
+      icon: <ArrowUpCircle className="w-5 h-5" />,
     },
     {
       href: "/todo",
